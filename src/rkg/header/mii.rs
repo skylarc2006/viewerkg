@@ -1,3 +1,5 @@
+use bitreader::BitReader;
+
 // TEMPORARY!!! Both of these traits are only here until work on reading mii data actually begins
 #[allow(dead_code)]
 #[derive(Default)]
@@ -75,9 +77,150 @@ pub struct Mii {
 
 impl Mii {
     pub fn new(mii_data: &[u8]) -> Self {
-        // TODO: read mii data
-        mii_data[0]; // This line is only here to avoid complaining about unused variables, remove this when implementing actual data reading
-        Self::default()
+        let mut mii_reader: BitReader<'_> = BitReader::new(&mii_data);
+
+        // TODO: read Mii data
+        let unknown1: bool = mii_reader.read_bool().expect("Failed to read unknown1");
+        let is_girl: bool = false;
+        let month: u8 = 0;
+        let day: u8 = 0;
+        let favorite_color: u8 = 0;
+        let is_favorite: bool = false;
+        let name: String = "Unknown".to_string();
+        let height: u8 = 0;
+        let weight: u8 = 0;
+        let mii_id1: u8 = 0;
+        let mii_id2: u8 = 0;
+        let mii_id3: u8 = 0;
+        let mii_id4: u8 = 0;
+        let system_id0: u8 = 0;
+        let system_id1: u8 = 0;
+        let system_id2: u8 = 0;
+        let system_id3: u8 = 0;
+        let face_shape: u8 = 0;
+        let skin_color: u8 = 0;
+        let facial_feature: u8 = 0;
+        let unknown2: u8 = 0;
+        let mingle_off: bool = false;
+        let unknown3: bool = false;
+        let downloaded: bool = false;
+        let hair_type: u8 = 0;
+        let hair_color: u8 = 0;
+        let hair_part_reversed: bool = false;
+        let unknown4: u8 = 0;
+        let eyebrow_type: u8 = 0;
+        let unknown5: bool = false;
+        let eyebrow_rotation: u8 = 0;
+        let unknown6: u8 = 0;
+        let eyebrow_color: u8 = 0;
+        let eyebrow_size: u8 = 0;
+        let eyebrow_vertical_pos: u8 = 0;
+        let eyebrow_horizontal_spacing: u8 = 0;
+        let eye_type: u8 = 0;
+        let unknown7: u8 = 0;
+        let eye_rotation: u8 = 0;
+        let eye_vertical_pos: u8 = 0;
+        let eye_color: u8 = 0;
+        let unknown8: bool = false;
+        let eye_size: u8 = 0;
+        let eye_horizontal_spacing: u8 = 0;
+        let unknown9: u8 = 0;
+        let nose_type: u8 = 0;
+        let nose_size: u8 = 0;
+        let nose_vertical_pos: u8 = 0;
+        let unknown10: u8 = 0;
+        let lip_type: u8 = 0;
+        let lip_color: u8 = 0;
+        let lip_size: u8 = 0;
+        let lip_vertical_pos: u8 = 0;
+        let glasses_type: u8 = 0;
+        let glasses_color: u8 = 0;
+        let unknown11: bool = false;
+        let glasses_size: u8 = 0;
+        let glasses_vertical_pos: u8 = 0;
+        let mustache_type: u8 = 0;
+        let beard_type: u8 = 0;
+        let facial_hair_color: u8 = 0;
+        let mustache_size: u8 = 0;
+        let mustache_vertical_pos: u8 = 0;
+        let has_mole: bool = false;
+        let mole_size: u8 = 0;
+        let mole_vertical_pos: u8 = 0;
+        let mole_horizontal_pos: u8 = 0;
+        let unknown12: bool = false;
+        let creator_name: String = "Unknown".to_string();
+
+        Self {
+            unknown1,
+            is_girl,
+            month,
+            day,
+            favorite_color,
+            is_favorite,
+            name,
+            height,
+            weight,
+            mii_id1,
+            mii_id2,
+            mii_id3,
+            mii_id4,
+            system_id0,
+            system_id1,
+            system_id2,
+            system_id3,
+            face_shape,
+            skin_color,
+            facial_feature,
+            unknown2,
+            mingle_off,
+            unknown3,
+            downloaded,
+            hair_type,
+            hair_color,
+            hair_part_reversed,
+            unknown4,
+            eyebrow_type,
+            unknown5,
+            eyebrow_rotation,
+            unknown6,
+            eyebrow_color,
+            eyebrow_size,
+            eyebrow_vertical_pos,
+            eyebrow_horizontal_spacing,
+            eye_type,
+            unknown7,
+            eye_rotation,
+            eye_vertical_pos,
+            eye_color,
+            unknown8,
+            eye_size,
+            eye_horizontal_spacing,
+            unknown9,
+            nose_type,
+            nose_size,
+            nose_vertical_pos,
+            unknown10,
+            lip_type,
+            lip_color,
+            lip_size,
+            lip_vertical_pos,
+            glasses_type,
+            glasses_color,
+            unknown11,
+            glasses_size,
+            glasses_vertical_pos,
+            mustache_type,
+            beard_type,
+            facial_hair_color,
+            mustache_size,
+            mustache_vertical_pos,
+            has_mole,
+            mole_size,
+            mole_vertical_pos,
+            mole_horizontal_pos,
+            unknown12,
+            creator_name,
+        }
     }
 
     pub fn unknown1(&self) -> bool {

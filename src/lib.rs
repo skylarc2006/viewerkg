@@ -15,7 +15,8 @@ mod tests {
         // TODO: gather several more test ghosts and data to test data reading
 
         // get the path of the current executable and then go 4 directories up (since .exe is in target/debug/deps)
-        let mut ghost_file_path: PathBuf = env::current_exe().expect("Failed to get current exe path");
+        let mut ghost_file_path: PathBuf =
+            env::current_exe().expect("Failed to get current exe path");
         ghost_file_path.pop();
         ghost_file_path.pop();
         ghost_file_path.pop();
