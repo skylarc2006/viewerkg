@@ -12,19 +12,19 @@ pub struct Header {
     unknown1: u8,                        // 2 bits, offset 0x07.6, likely padding
     vehicle_id: u8,                      // 6 bits, offset 0x08
     character_id: u8,                    // 6 bits, offset 0x08.6
-    year_set: u8,                        // 7 bits, offset 0x09.4
-    month_set: u8,                       // 4 bits, offset 0x0A.3
-    day_set: u8,                         // 5 bits, offset 0x0A.7
-    controller_id: u8,                   // 4 bits, offset 0x0B.4
-    unknown2: u8,                        // 4 bits, offset 0x0C, always 0?
-    is_compressed: bool,                 // 1 bit, offset 0xC.4
-    unknown3: u8,                        // 2 bits, offset 0x0C.5, always 0?
-    ghost_type: u8,                      // 7 bits, offset 0x0C.7
-    is_automatic_drift: bool,            // 1 bit, offset 0x0D.6
-    unknown4: bool,                      // 1 bit, offset 0x0D.7, likely padding
+    year_set: u16, // 7 bits, offset 0x09.4 (Stores year relative to 2000 but will be stored as actual year here)
+    month_set: u8, // 4 bits, offset 0x0A.3
+    day_set: u8,   // 5 bits, offset 0x0A.7
+    controller_id: u8, // 4 bits, offset 0x0B.4
+    unknown2: u8,  // 4 bits, offset 0x0C, always 0?
+    is_compressed: bool, // 1 bit, offset 0xC.4
+    unknown3: u8,  // 2 bits, offset 0x0C.5, always 0?
+    ghost_type: u8, // 7 bits, offset 0x0C.7
+    is_automatic_drift: bool, // 1 bit, offset 0x0D.6
+    unknown4: bool, // 1 bit, offset 0x0D.7, likely padding
     decompressed_input_data_length: u16, // 0x02, offset 0x0E
-    lap_count: u8,                       // 0x01, offset 0x10
-    lap_split_times: Vec<FinishTime>,    // 0x0F, offset 0x11, first 5 laps
+    lap_count: u8, // 0x01, offset 0x10
+    lap_split_times: Vec<FinishTime>, // 0x0F, offset 0x11, first 5 laps
     // 0x14, offset 0x20, vanilla game attempts to store laps greater than 5 but fails.
     country_code: u8,   // 0x01, offset 0x34
     state_code: u8,     // 0x01, offset 0x35
@@ -36,62 +36,63 @@ pub struct Header {
 
 impl Header {
     pub fn new(rkg_data: &[u8]) -> Self {
-        // Get RKGD magic
         let mut rkg_reader: BitReader<'_> = BitReader::new(&rkg_data);
-        let rkgd_bytes: [u8; _] = rkg_reader
-            .read_u32(32)
-            .expect("Failed to read rkgd")
-            .to_be_bytes();
-        let mut rkgd: String = String::new();
 
-        // Convert the byte array to a String
-        match String::from_utf8(rkgd_bytes.to_vec()) {
-            Ok(s) => {
-                rkgd = s;
-            }
-            Err(e) => {
-                eprintln!("Failed to convert bytes to UTF-8 string: {}", e);
-            }
+        let rkgd: String = get_rkgd(&mut rkg_reader);
+        let finish_time: FinishTime = FinishTime::from_reader(&mut rkg_reader);
+        let track_id: u8 = rkg_reader.read_u8(6).expect("Failed to read track ID");
+        let unknown1: u8 = rkg_reader.read_u8(2).expect("Failed to read unknown1");
+        let vehicle_id: u8 = rkg_reader.read_u8(6).expect("Failed to read vehicle ID");
+        let character_id: u8 = rkg_reader.read_u8(6).expect("Failed to read character ID");
+        let year_set: u16 = rkg_reader.read_u16(7).expect("Failed to read year set") + 2000;
+        let month_set: u8 = rkg_reader.read_u8(4).expect("Failed to read month set");
+        let day_set: u8 = rkg_reader.read_u8(5).expect("Failed to read day set");
+        let controller_id: u8 = rkg_reader.read_u8(4).expect("Failed to read controller ID");
+        let unknown2: u8 = rkg_reader.read_u8(4).expect("Failed to read unknown2");
+
+        let is_compressed: bool = rkg_reader
+            .read_bool()
+            .expect("Failed to read is_compressed");
+
+        let unknown3: u8 = rkg_reader.read_u8(2).expect("Failed to read unknown3");
+        let ghost_type: u8 = rkg_reader.read_u8(7).expect("Failed to read ghost type");
+
+        let is_automatic_drift: bool = rkg_reader
+            .read_bool()
+            .expect("Failed to read is_automatic_drift");
+
+        let unknown4: bool = rkg_reader.read_bool().expect("Failed to read unknown4");
+
+        let decompressed_input_data_length: u16 = rkg_reader
+            .read_u16(16)
+            .expect("Failed to read decompressed input data length");
+
+        let lap_count: u8 = rkg_reader.read_u8(8).expect("Failed to read lap count");
+
+        let mut lap_split_times: Vec<FinishTime> = Vec::new();
+        for _ in 1..=9 {
+            lap_split_times.push(FinishTime::from_reader(&mut rkg_reader));
         }
 
-        // Get finish time
-        let m: u8 = rkg_reader
-            .read_u8(7)
-            .expect("Failed to read minutes of finish time")
-            .to_be();
-        let s: u8 = rkg_reader
-            .read_u8(7)
-            .expect("Failed to read seconds of finish time")
-            .to_be();
-        let ms: u16 = rkg_reader
-            .read_u16(10)
-            .expect("Failed to read milliseconds of finish time"); // bitreader already interprets multi-byte values as big endian
-        let finish_time: FinishTime = FinishTime::new(m, s, ms);
+        // Skip garbage RAM data
+        rkg_reader.skip(64).expect("Failed to skip garbage data");
 
-        // TODO: everything from this point on
-        let track_id: u8 = 0;
-        let unknown1: u8 = 0;
-        let vehicle_id: u8 = 0;
-        let character_id: u8 = 0;
-        let year_set: u8 = 0;
-        let month_set: u8 = 0;
-        let day_set: u8 = 0;
-        let controller_id: u8 = 0;
-        let unknown2: u8 = 0;
-        let is_compressed: bool = false;
-        let unknown3: u8 = 0;
-        let ghost_type: u8 = 0;
-        let is_automatic_drift: bool = false;
-        let unknown4: bool = false;
-        let decompressed_input_data_length: u16 = 0;
-        let lap_count: u8 = 0;
-        let lap_split_times: Vec<FinishTime> = Vec::new();
-        let country_code: u8 = 0;
-        let state_code: u8 = 0;
-        let location_code: u16 = 0;
-        let unknown6: u32 = 0;
+        let country_code: u8 = rkg_reader.read_u8(8).expect("Failed to read country code");
+        let state_code: u8 = rkg_reader.read_u8(8).expect("Failed to read state code");
+
+        let location_code: u16 = rkg_reader
+            .read_u16(16)
+            .expect("Failed to read location code");
+
+        let unknown6: u32 = rkg_reader.read_u32(32).expect("Failed to read unknown6");
         let mii_data: Mii = Mii::new(&rkg_data[0x3C..0x86]);
-        let mii_crc16: u16 = 0;
+
+        // Skip current reader over mii data (Mii constructor uses its own reader)
+        for _ in 1..=74 {
+            rkg_reader.skip(8).expect("Failed to skip Mii data");
+        }
+
+        let mii_crc16: u16 = rkg_reader.read_u16(16).expect("Failed to read Mii CRC16");
 
         Self {
             rkgd,
@@ -146,7 +147,7 @@ impl Header {
         self.character_id
     }
 
-    pub fn year_set(&self) -> u8 {
+    pub fn year_set(&self) -> u16 {
         self.year_set
     }
 
@@ -220,5 +221,23 @@ impl Header {
 
     pub fn mii_crc16(&self) -> u16 {
         self.mii_crc16
+    }
+}
+
+fn get_rkgd(rkg_reader: &mut BitReader) -> String {
+    let rkgd_bytes: [u8; _] = rkg_reader
+        .read_u32(32)
+        .expect("Failed to read rkgd")
+        .to_be_bytes();
+
+    // TODO: rewrite this and probably return Option<String>?
+    // Convert the byte array to a String
+    match String::from_utf8(rkgd_bytes.to_vec()) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to convert bytes to UTF-8 string: {}", e);
+            let s: &str = "FUCK";
+            s.to_string()
+        }
     }
 }
