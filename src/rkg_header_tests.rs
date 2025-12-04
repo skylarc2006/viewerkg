@@ -1,10 +1,8 @@
-pub mod rkg;
+// TODO: Once RKG struct is defined in lib.rs, move this to tests/ in the root directory
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use rkg::header::Header;
+    use crate::rkg::header::Header;
     use std::env;
     use std::fs::File;
     use std::io::Read;
