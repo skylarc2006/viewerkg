@@ -8,6 +8,7 @@ use crate::header::{
 };
 
 pub mod finish_time;
+pub mod combo;
 pub mod mii;
 pub mod slot_id;
 
