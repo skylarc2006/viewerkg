@@ -4,6 +4,7 @@
 use crate::header::{
     Header,
     combo::{Character, Vehicle},
+    date::Date,
     slot_id::SlotId,
 };
 use std::io::Read;
@@ -26,9 +27,7 @@ fn test_rkg_header() {
     assert_eq!(header.slot_id(), SlotId::LuigiCircuit);
     assert_eq!(header.combo().vehicle(), Vehicle::WarioBike);
     assert_eq!(header.combo().character(), Character::KingBoo);
-    assert_eq!(header.year_set(), 2025);
-    assert_eq!(header.month_set(), 11);
-    assert_eq!(header.day_set(), 12);
+    assert_eq!(header.date_set(), &Date::new(2025, 11, 12).unwrap());
     assert_eq!(header.controller_id(), 2);
     assert_eq!(header.is_compressed(), true);
     assert_eq!(header.ghost_type(), 0x26);
