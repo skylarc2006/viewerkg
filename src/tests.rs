@@ -1,4 +1,11 @@
-use crate::header::{Header, slot_id::SlotId};
+// TODO: Once RKG struct is defined in lib.rs, move this to tests/ in the root directory
+// TODO: Once more test files are gathered, write more tests
+
+use crate::header::{
+    Header,
+    combo::{Character, Vehicle},
+    slot_id::SlotId,
+};
 use std::io::Read;
 
 #[test]
@@ -17,8 +24,8 @@ fn test_rkg_header() {
     assert_eq!(header.finish_time().milliseconds(), 904);
     assert_eq!(header.finish_time().to_string(), "01:03.904");
     assert_eq!(header.slot_id(), SlotId::LuigiCircuit);
-    assert_eq!(header.vehicle_id(), 0x1A);
-    assert_eq!(header.character_id(), 0x13);
+    assert_eq!(header.combo().vehicle(), Vehicle::WarioBike);
+    assert_eq!(header.combo().character(), Character::KingBoo);
     assert_eq!(header.year_set(), 2025);
     assert_eq!(header.month_set(), 11);
     assert_eq!(header.day_set(), 12);
