@@ -1,14 +1,15 @@
 use bitreader::BitReader;
 
-use crate::header::{finish_time::FinishTime, mii::Mii};
+use crate::header::{finish_time::FinishTime, mii::Mii, slot_id::SlotId};
 
 pub mod finish_time;
 pub mod mii;
+pub mod slot_id;
 
 pub struct Header {
     rkgd: String,                        // 0x04, offset 0x00
     finish_time: FinishTime,             // 0x03, offset 0x04
-    track_id: u8,                        // 6 bits, offset 0x07
+    slot_id: SlotId,                     // 6 bits, offset 0x07
     unknown1: u8,                        // 2 bits, offset 0x07.6, likely padding
     vehicle_id: u8,                      // 6 bits, offset 0x08
     character_id: u8,                    // 6 bits, offset 0x08.6
@@ -38,17 +39,17 @@ impl Header {
     pub fn new(rkg_data: &[u8]) -> Self {
         let mut rkg_reader: BitReader<'_> = BitReader::new(rkg_data);
 
-        let rkgd: String = get_rkgd(&mut rkg_reader);
-        let finish_time: FinishTime = FinishTime::from(&mut rkg_reader);
-        let track_id: u8 = rkg_reader.read_u8(6).expect("Failed to read track ID");
-        let unknown1: u8 = rkg_reader.read_u8(2).expect("Failed to read unknown1");
-        let vehicle_id: u8 = rkg_reader.read_u8(6).expect("Failed to read vehicle ID");
-        let character_id: u8 = rkg_reader.read_u8(6).expect("Failed to read character ID");
-        let year_set: u16 = rkg_reader.read_u16(7).expect("Failed to read year set") + 2000;
-        let month_set: u8 = rkg_reader.read_u8(4).expect("Failed to read month set");
-        let day_set: u8 = rkg_reader.read_u8(5).expect("Failed to read day set");
-        let controller_id: u8 = rkg_reader.read_u8(4).expect("Failed to read controller ID");
-        let unknown2: u8 = rkg_reader.read_u8(4).expect("Failed to read unknown2");
+        let rkgd = get_rkgd(&mut rkg_reader);
+        let finish_time = FinishTime::from(&mut rkg_reader);
+        let slot_id = SlotId::try_from(&mut rkg_reader).expect("Non Existent Slot ID");
+        let unknown1 = rkg_reader.read_u8(2).expect("Failed to read unknown1");
+        let vehicle_id = rkg_reader.read_u8(6).expect("Failed to read vehicle ID");
+        let character_id = rkg_reader.read_u8(6).expect("Failed to read character ID");
+        let year_set = rkg_reader.read_u16(7).expect("Failed to read year set") + 2000;
+        let month_set = rkg_reader.read_u8(4).expect("Failed to read month set");
+        let day_set = rkg_reader.read_u8(5).expect("Failed to read day set");
+        let controller_id = rkg_reader.read_u8(4).expect("Failed to read controller ID");
+        let unknown2 = rkg_reader.read_u8(4).expect("Failed to read unknown2");
 
         let is_compressed: bool = rkg_reader
             .read_bool()
@@ -97,7 +98,7 @@ impl Header {
         Self {
             rkgd,
             finish_time,
-            track_id,
+            slot_id,
             unknown1,
             vehicle_id,
             character_id,
@@ -131,8 +132,8 @@ impl Header {
         &self.finish_time
     }
 
-    pub fn track_id(&self) -> u8 {
-        self.track_id
+    pub fn slot_id(&self) -> SlotId {
+        self.slot_id
     }
 
     pub fn unknown1(&self) -> u8 {
