@@ -1,13 +1,27 @@
 use bitreader::BitReader;
 
-use crate::header::{finish_time::FinishTime, mii::Mii, slot_id::SlotId};
+use crate::header::{
+    finish_time::FinishTime,
+    mii::Mii,
+    slot_id::{SlotId, SlotIdError},
+};
 
+pub mod combo;
 pub mod finish_time;
 pub mod mii;
 pub mod slot_id;
 
+#[derive(thiserror::Error, Debug)]
+pub enum HeaderError {
+    #[error("File is not RKGD")]
+    NotRKGD,
+    #[error("BitReader Error: {0}")]
+    BitReaderError(#[from] bitreader::BitReaderError),
+    #[error("Slot ID Error: {0}")]
+    SlotIdError(#[from] SlotIdError),
+}
+
 pub struct Header {
-    rkgd: String,                        // 0x04, offset 0x00
     finish_time: FinishTime,             // 0x03, offset 0x04
     slot_id: SlotId,                     // 6 bits, offset 0x07
     unknown1: u8,                        // 2 bits, offset 0x07.6, likely padding
@@ -36,39 +50,40 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new(rkg_data: &[u8]) -> Self {
+    pub fn new(rkg_data: &[u8]) -> Result<Self, HeaderError> {
         let mut rkg_reader: BitReader<'_> = BitReader::new(rkg_data);
 
-        let rkgd = get_rkgd(&mut rkg_reader);
+        if rkg_reader.read_u32(32)? != 0x524B4744 {
+            return Err(HeaderError::NotRKGD);
+        }
+
         let finish_time = FinishTime::from(&mut rkg_reader);
-        let slot_id = SlotId::try_from(&mut rkg_reader).expect("Non Existent Slot ID");
-        let unknown1 = rkg_reader.read_u8(2).expect("Failed to read unknown1");
-        let vehicle_id = rkg_reader.read_u8(6).expect("Failed to read vehicle ID");
-        let character_id = rkg_reader.read_u8(6).expect("Failed to read character ID");
-        let year_set = rkg_reader.read_u16(7).expect("Failed to read year set") + 2000;
-        let month_set = rkg_reader.read_u8(4).expect("Failed to read month set");
-        let day_set = rkg_reader.read_u8(5).expect("Failed to read day set");
-        let controller_id = rkg_reader.read_u8(4).expect("Failed to read controller ID");
-        let unknown2 = rkg_reader.read_u8(4).expect("Failed to read unknown2");
+        let slot_id = SlotId::try_from(&mut rkg_reader)?;
+
+        let unknown1 = rkg_reader.read_u8(2)?; // Padding
+
+        let vehicle_id = rkg_reader.read_u8(6)?;
+        let character_id = rkg_reader.read_u8(6)?;
+        let year_set = rkg_reader.read_u16(7)? + 2000;
+        let month_set = rkg_reader.read_u8(4)?;
+        let day_set = rkg_reader.read_u8(5)?;
+        let controller_id = rkg_reader.read_u8(4)?;
+        let unknown2 = rkg_reader.read_u8(4)?;
 
         let is_compressed: bool = rkg_reader
             .read_bool()
             .expect("Failed to read is_compressed");
 
-        let unknown3: u8 = rkg_reader.read_u8(2).expect("Failed to read unknown3");
-        let ghost_type: u8 = rkg_reader.read_u8(7).expect("Failed to read ghost type");
+        let unknown3: u8 = rkg_reader.read_u8(2)?;
+        let ghost_type: u8 = rkg_reader.read_u8(7)?;
 
-        let is_automatic_drift: bool = rkg_reader
-            .read_bool()
-            .expect("Failed to read is_automatic_drift");
+        let is_automatic_drift: bool = rkg_reader.read_bool()?;
 
-        let unknown4: bool = rkg_reader.read_bool().expect("Failed to read unknown4");
+        let unknown4: bool = rkg_reader.read_bool()?;
 
-        let decompressed_input_data_length: u16 = rkg_reader
-            .read_u16(16)
-            .expect("Failed to read decompressed input data length");
+        let decompressed_input_data_length: u16 = rkg_reader.read_u16(16)?;
 
-        let lap_count: u8 = rkg_reader.read_u8(8).expect("Failed to read lap count");
+        let lap_count: u8 = rkg_reader.read_u8(8)?;
 
         let mut lap_split_times: Vec<FinishTime> = Vec::new();
         for _ in 1..=9 {
@@ -76,27 +91,24 @@ impl Header {
         }
 
         // Skip garbage RAM data
-        rkg_reader.skip(64).expect("Failed to skip garbage data");
+        rkg_reader.skip(64)?;
 
-        let country_code: u8 = rkg_reader.read_u8(8).expect("Failed to read country code");
-        let state_code: u8 = rkg_reader.read_u8(8).expect("Failed to read state code");
+        let country_code: u8 = rkg_reader.read_u8(8)?;
+        let state_code: u8 = rkg_reader.read_u8(8)?;
 
-        let location_code: u16 = rkg_reader
-            .read_u16(16)
-            .expect("Failed to read location code");
+        let location_code: u16 = rkg_reader.read_u16(16)?;
 
-        let unknown6: u32 = rkg_reader.read_u32(32).expect("Failed to read unknown6");
+        let unknown6: u32 = rkg_reader.read_u32(32)?;
         let mii_data: Mii = Mii::new(&rkg_data[0x3C..0x86]);
 
         // Skip current reader over mii data (Mii constructor uses its own reader)
         for _ in 1..=74 {
-            rkg_reader.skip(8).expect("Failed to skip Mii data");
+            rkg_reader.skip(8)?;
         }
 
-        let mii_crc16: u16 = rkg_reader.read_u16(16).expect("Failed to read Mii CRC16");
+        let mii_crc16: u16 = rkg_reader.read_u16(16)?;
 
-        Self {
-            rkgd,
+        Ok(Self {
             finish_time,
             slot_id,
             unknown1,
@@ -121,11 +133,7 @@ impl Header {
             unknown6,
             mii_data,
             mii_crc16,
-        }
-    }
-
-    pub fn rkgd(&self) -> &str {
-        &self.rkgd
+        })
     }
 
     pub fn finish_time(&self) -> &FinishTime {
@@ -222,23 +230,5 @@ impl Header {
 
     pub fn mii_crc16(&self) -> u16 {
         self.mii_crc16
-    }
-}
-
-fn get_rkgd(rkg_reader: &mut BitReader) -> String {
-    let rkgd_bytes: [u8; _] = rkg_reader
-        .read_u32(32)
-        .expect("Failed to read rkgd")
-        .to_be_bytes();
-
-    // TODO: rewrite this and probably return Option<String>?
-    // Convert the byte array to a String
-    match String::from_utf8(rkgd_bytes.to_vec()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("Failed to convert bytes to UTF-8 string: {}", e);
-            let s: &str = "FUCK";
-            s.to_string()
-        }
     }
 }

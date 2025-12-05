@@ -4,6 +4,8 @@
 pub enum SlotIdError {
     #[error("Non Existent Slot ID")]
     NonExistentSlotId,
+    #[error("BitReader Error: {0}")]
+    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -172,6 +174,6 @@ impl TryFrom<u8> for SlotId {
 impl TryFrom<&mut bitreader::BitReader<'_>> for SlotId {
     type Error = SlotIdError;
     fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
-        SlotId::try_from(value.read_u8(6).expect("Failed to read track ID"))
+        SlotId::try_from(value.read_u8(6)?)
     }
 }
