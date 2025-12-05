@@ -50,7 +50,7 @@ pub struct Header {
 
 impl Header {
     pub fn new(rkg_data: &[u8]) -> Result<Self, HeaderError> {
-        let mut rkg_reader: BitReader<'_> = BitReader::new(rkg_data);
+        let mut rkg_reader = BitReader::new(rkg_data);
 
         if rkg_reader.read_u32(32)? != 0x524B4744 {
             return Err(HeaderError::NotRKGD);
@@ -69,20 +69,20 @@ impl Header {
         let controller_id = rkg_reader.read_u8(4)?;
         let unknown2 = rkg_reader.read_u8(4)?;
 
-        let is_compressed: bool = rkg_reader
+        let is_compressed = rkg_reader
             .read_bool()
             .expect("Failed to read is_compressed");
 
-        let unknown3: u8 = rkg_reader.read_u8(2)?;
-        let ghost_type: u8 = rkg_reader.read_u8(7)?;
+        let unknown3 = rkg_reader.read_u8(2)?;
+        let ghost_type = rkg_reader.read_u8(7)?;
 
-        let is_automatic_drift: bool = rkg_reader.read_bool()?;
+        let is_automatic_drift = rkg_reader.read_bool()?;
 
-        let unknown4: bool = rkg_reader.read_bool()?;
+        let unknown4 = rkg_reader.read_bool()?;
 
-        let decompressed_input_data_length: u16 = rkg_reader.read_u16(16)?;
+        let decompressed_input_data_length = rkg_reader.read_u16(16)?;
 
-        let lap_count: u8 = rkg_reader.read_u8(8)?;
+        let lap_count = rkg_reader.read_u8(8)?;
 
         let mut lap_split_times: Vec<FinishTime> = Vec::new();
         for _ in 1..=9 {
@@ -92,20 +92,20 @@ impl Header {
         // Skip garbage RAM data
         rkg_reader.skip(64)?;
 
-        let country_code: u8 = rkg_reader.read_u8(8)?;
-        let state_code: u8 = rkg_reader.read_u8(8)?;
+        let country_code = rkg_reader.read_u8(8)?;
+        let state_code = rkg_reader.read_u8(8)?;
 
-        let location_code: u16 = rkg_reader.read_u16(16)?;
+        let location_code = rkg_reader.read_u16(16)?;
 
-        let unknown6: u32 = rkg_reader.read_u32(32)?;
-        let mii_data: Mii = Mii::new(&rkg_data[0x3C..0x86]);
+        let unknown6 = rkg_reader.read_u32(32)?;
+        let mii_data = Mii::new(&rkg_data[0x3C..0x86]);
 
         // Skip current reader over mii data (Mii constructor uses its own reader)
         for _ in 1..=74 {
             rkg_reader.skip(8)?;
         }
 
-        let mii_crc16: u16 = rkg_reader.read_u16(16)?;
+        let mii_crc16 = rkg_reader.read_u16(16)?;
 
         Ok(Self {
             finish_time,
