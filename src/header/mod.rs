@@ -2,6 +2,7 @@ use bitreader::BitReader;
 
 use crate::header::{
     combo::{Combo, ComboError},
+    controller::{Controller, ControllerError},
     date::{Date, DateError},
     finish_time::{FinishTime, FinishTimeError},
     mii::Mii,
@@ -9,6 +10,7 @@ use crate::header::{
 };
 
 pub mod combo;
+pub mod controller;
 pub mod date;
 pub mod finish_time;
 pub mod mii;
@@ -28,6 +30,8 @@ pub enum HeaderError {
     ComboError(#[from] ComboError),
     #[error("Date Error: {0}")]
     DateError(#[from] DateError),
+    #[error("Controller Error: {0}")]
+    ControllerError(#[from] ControllerError),
 }
 
 pub struct Header {
@@ -36,7 +40,7 @@ pub struct Header {
     unknown1: u8,
     combo: Combo,
     date_set: Date,
-    controller_id: u8,
+    controller: Controller,
     unknown2: u8,
     is_compressed: bool,
     unknown3: u8,
@@ -69,8 +73,8 @@ impl Header {
 
         let combo = Combo::try_from(&mut rkg_reader)?;
         let date_set = Date::try_from(&mut rkg_reader)?;
-
-        let controller_id = rkg_reader.read_u8(4)?;
+        let controller = Controller::try_from(&mut rkg_reader)?;
+        
         let unknown2 = rkg_reader.read_u8(4)?;
 
         let is_compressed = rkg_reader
@@ -117,7 +121,7 @@ impl Header {
             unknown1,
             combo,
             date_set,
-            controller_id,
+            controller,
             unknown2,
             is_compressed,
             unknown3,
@@ -156,8 +160,8 @@ impl Header {
         &self.date_set
     }
 
-    pub fn controller_id(&self) -> u8 {
-        self.controller_id
+    pub fn controller(&self) -> Controller {
+        self.controller
     }
 
     pub fn unknown2(&self) -> u8 {

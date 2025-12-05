@@ -4,6 +4,7 @@
 use crate::header::{
     Header,
     combo::{Character, Vehicle},
+    controller::Controller,
     date::Date,
     slot_id::SlotId,
 };
@@ -28,7 +29,7 @@ fn test_rkg_header() {
     assert_eq!(header.combo().vehicle(), Vehicle::WarioBike);
     assert_eq!(header.combo().character(), Character::KingBoo);
     assert_eq!(header.date_set(), &Date::new(2025, 11, 12).unwrap());
-    assert_eq!(header.controller_id(), 2);
+    assert_eq!(header.controller(), Controller::Classic);
     assert_eq!(header.is_compressed(), true);
     assert_eq!(header.ghost_type(), 0x26);
     assert_eq!(header.is_automatic_drift(), true);
