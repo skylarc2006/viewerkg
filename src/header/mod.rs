@@ -5,6 +5,7 @@ use crate::header::{
     controller::{Controller, ControllerError},
     date::{Date, DateError},
     finish_time::{FinishTime, FinishTimeError},
+    ghost_type::{GhostType, GhostTypeError},
     mii::Mii,
     slot_id::{SlotId, SlotIdError},
 };
@@ -13,6 +14,7 @@ pub mod combo;
 pub mod controller;
 pub mod date;
 pub mod finish_time;
+pub mod ghost_type;
 pub mod mii;
 pub mod slot_id;
 
@@ -32,6 +34,8 @@ pub enum HeaderError {
     DateError(#[from] DateError),
     #[error("Controller Error: {0}")]
     ControllerError(#[from] ControllerError),
+    #[error("Ghost Type Error: {0}")]
+    GhostTypeError(#[from] GhostTypeError),
 }
 
 pub struct Header {
@@ -44,7 +48,7 @@ pub struct Header {
     unknown2: u8,
     is_compressed: bool,
     unknown3: u8,
-    ghost_type: u8,
+    ghost_type: GhostType,
     is_automatic_drift: bool,
     unknown4: bool,
     decompressed_input_data_length: u16,
@@ -74,7 +78,7 @@ impl Header {
         let combo = Combo::try_from(&mut rkg_reader)?;
         let date_set = Date::try_from(&mut rkg_reader)?;
         let controller = Controller::try_from(&mut rkg_reader)?;
-        
+
         let unknown2 = rkg_reader.read_u8(4)?;
 
         let is_compressed = rkg_reader
@@ -82,7 +86,7 @@ impl Header {
             .expect("Failed to read is_compressed");
 
         let unknown3 = rkg_reader.read_u8(2)?;
-        let ghost_type = rkg_reader.read_u8(7)?;
+        let ghost_type = GhostType::try_from(&mut rkg_reader)?;
 
         let is_automatic_drift = rkg_reader.read_bool()?;
 
@@ -176,7 +180,7 @@ impl Header {
         self.unknown3
     }
 
-    pub fn ghost_type(&self) -> u8 {
+    pub fn ghost_type(&self) -> GhostType {
         self.ghost_type
     }
 

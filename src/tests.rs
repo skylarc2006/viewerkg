@@ -6,6 +6,7 @@ use crate::header::{
     combo::{Character, Vehicle},
     controller::Controller,
     date::Date,
+    ghost_type::GhostType,
     slot_id::SlotId,
 };
 use std::io::Read;
@@ -31,7 +32,7 @@ fn test_rkg_header() {
     assert_eq!(header.date_set(), &Date::new(2025, 11, 12).unwrap());
     assert_eq!(header.controller(), Controller::Classic);
     assert_eq!(header.is_compressed(), true);
-    assert_eq!(header.ghost_type(), 0x26);
+    assert_eq!(header.ghost_type(), GhostType::ExpertStaff);
     assert_eq!(header.is_automatic_drift(), true);
     assert_eq!(header.decompressed_input_data_length(), 1856);
     assert_eq!(header.lap_count(), 3);

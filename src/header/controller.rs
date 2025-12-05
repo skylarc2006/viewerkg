@@ -27,6 +27,17 @@ impl TryFrom<u8> for Controller {
     }
 }
 
+impl From<Controller> for u8 {
+    fn from(value: Controller) -> Self {
+        match value {
+            Controller::WiiWheel => 0,
+            Controller::Nunchuk => 1,
+            Controller::Classic => 2,
+            Controller::Gamecube => 3,
+        }
+    }
+}
+
 impl TryFrom<&mut bitreader::BitReader<'_>> for Controller {
     type Error = ControllerError;
     fn try_from(value: &mut bitreader::BitReader) -> Result<Self, Self::Error> {
