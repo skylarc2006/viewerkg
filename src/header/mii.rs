@@ -15,14 +15,8 @@ pub struct Mii {
     name: String,
     height: u8,
     weight: u8,
-    mii_id1: u8,
-    mii_id2: u8,
-    mii_id3: u8,
-    mii_id4: u8,
-    system_id0: u8,
-    system_id1: u8,
-    system_id2: u8,
-    system_id3: u8,
+    mii_id: u32,
+    system_id: u32,
     face_shape: u8,
     skin_color: u8,
     facial_feature: u8,
@@ -104,36 +98,12 @@ impl Mii {
         self.weight
     }
 
-    pub fn mii_id1(&self) -> u8 {
-        self.mii_id1
+    pub fn mii_id(&self) -> u32 {
+        self.mii_id
     }
 
-    pub fn mii_id2(&self) -> u8 {
-        self.mii_id2
-    }
-
-    pub fn mii_id3(&self) -> u8 {
-        self.mii_id3
-    }
-
-    pub fn mii_id4(&self) -> u8 {
-        self.mii_id4
-    }
-
-    pub fn system_id0(&self) -> u8 {
-        self.system_id0
-    }
-
-    pub fn system_id1(&self) -> u8 {
-        self.system_id1
-    }
-
-    pub fn system_id2(&self) -> u8 {
-        self.system_id2
-    }
-
-    pub fn system_id3(&self) -> u8 {
-        self.system_id3
+    pub fn system_id(&self) -> u32 {
+        self.system_id
     }
 
     pub fn face_shape(&self) -> u8 {
@@ -335,15 +305,8 @@ impl TryFrom<&mut bitreader::BitReader<'_>> for Mii {
 
         let weight = mii_reader.read_u8(8)?;
 
-        let mii_id1 = mii_reader.read_u8(8)?;
-        let mii_id2 = mii_reader.read_u8(8)?;
-        let mii_id3 = mii_reader.read_u8(8)?;
-        let mii_id4 = mii_reader.read_u8(8)?;
-        let system_id0 = mii_reader.read_u8(8)?;
-        let system_id1 = mii_reader.read_u8(8)?;
-        let system_id2 = mii_reader.read_u8(8)?;
-        let system_id3 = mii_reader.read_u8(8)?;
-
+        let mii_id = mii_reader.read_u32(32)?;
+        let system_id = mii_reader.read_u32(32)?;
         let face_shape = mii_reader.read_u8(3)?;
         let skin_color = mii_reader.read_u8(3)?;
         let facial_feature = mii_reader.read_u8(4)?;
@@ -421,14 +384,8 @@ impl TryFrom<&mut bitreader::BitReader<'_>> for Mii {
             name,
             height,
             weight,
-            mii_id1,
-            mii_id2,
-            mii_id3,
-            mii_id4,
-            system_id0,
-            system_id1,
-            system_id2,
-            system_id3,
+            mii_id,
+            system_id,
             face_shape,
             skin_color,
             facial_feature,

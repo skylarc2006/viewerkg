@@ -49,14 +49,8 @@ fn test_rkg_header() {
     assert_eq!(header.mii_data().height(), 127);
     assert_eq!(header.mii_data().weight(), 127);
 
-    assert_eq!(header.mii_data().mii_id1(), 0x89);
-    assert_eq!(header.mii_data().mii_id2(), 0x3E);
-    assert_eq!(header.mii_data().mii_id3(), 0xF2);
-    assert_eq!(header.mii_data().mii_id4(), 0xFB);
-    assert_eq!(header.mii_data().system_id0(), 0x68);
-    assert_eq!(header.mii_data().system_id1(), 0x9E);
-    assert_eq!(header.mii_data().system_id2(), 0xC9);
-    assert_eq!(header.mii_data().system_id3(), 0x92);
+    assert_eq!(header.mii_data().mii_id(), 0x893EF2FB);
+    assert_eq!(header.mii_data().system_id(), 0x689EC992);
 
     assert_eq!(header.mii_data().face_shape(), 3);
     assert_eq!(header.mii_data().skin_color(), 1);
