@@ -1,5 +1,3 @@
-// TODO: define a struct here named FaceButtonInput that has a FaceButton and a u8 for length held in frames
-
 #[derive(thiserror::Error, Debug)]
 pub enum FaceButtonError {
     #[error("Non Existent Face Button")]
@@ -40,5 +38,49 @@ impl TryFrom<u8> for FaceButton {
             0xF0 => Ok(FaceButton::Unknown),
             _ => Err(FaceButtonError::NonExistentFaceButton),
         }
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum FaceInputError {
+    #[error("Invalid Face Input")]
+    InvalidFaceInput,
+    #[error("Invalid Face Button: {0}")]
+    InvalidButton(#[from] FaceButtonError),
+    #[error("BitReader Error: {0}")]
+    BitReaderError(#[from] bitreader::BitReaderError),
+}
+pub struct FaceInput {
+    button: FaceButton,
+    frame_duration: u8
+}
+
+impl FaceInput {
+    pub fn button(&self) -> FaceButton {
+        self.button
+    }
+    
+    pub fn frame_duration(&self) -> u8 {
+        self.frame_duration
+    }
+}
+
+impl TryFrom<u16> for FaceInput {
+    type Error = FaceInputError;
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        let bytes = value.to_be_bytes();
+        let button = FaceButton::try_from(bytes[0])?;
+        let frame_duration = bytes[1];
+        Ok(Self {
+            button,
+            frame_duration
+        })
+    }
+}
+
+impl TryFrom<&mut bitreader::BitReader<'_>> for FaceInput {
+    type Error = FaceInputError;
+    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
+        FaceInput::try_from(value.read_u16(16)?)
     }
 }

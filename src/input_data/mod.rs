@@ -1,4 +1,4 @@
-pub mod face_button;
+pub mod face_input;
 
 pub struct InputData {
     face_button_count: u16,
