@@ -110,7 +110,7 @@ impl Header {
         let location_code = rkg_reader.read_u16(16)?;
 
         let unknown6 = rkg_reader.read_u32(32)?;
-        let mii_data = Mii::new(&rkg_data[0x3C..0x86]);
+        let mii_data = Mii::new(&rkg_data[0x3C..0x86]).expect("Failed to read Mii");
 
         // Skip current reader over mii data (Mii constructor uses its own reader)
         for _ in 1..=74 {

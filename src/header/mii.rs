@@ -73,142 +73,106 @@ pub struct Mii {
 }
 
 impl Mii {
-    pub fn new(mii_data: &[u8]) -> Self {
+    pub fn new(mii_data: &[u8]) -> Result<Self, bitreader::BitReaderError> {
         let mut mii_reader: BitReader<'_> = BitReader::new(mii_data);
 
-        let unknown1 = mii_reader.read_bool().expect("Failed to read unknown1");
-        let is_girl = mii_reader.read_bool().expect("Failed to read is_girl");
-        let month = mii_reader.read_u8(4).expect("Failed to read month");
-        let day = mii_reader.read_u8(5).expect("Failed to read day");
+        let unknown1 = mii_reader.read_bool()?;
+        let is_girl = mii_reader.read_bool()?;
+        let month = mii_reader.read_u8(4)?;
+        let day = mii_reader.read_u8(5)?;
 
-        let favorite_color = mii_reader
-            .read_u8(4)
-            .expect("Failed to read favorite color");
+        let favorite_color = mii_reader.read_u8(4)?;
 
-        let is_favorite = mii_reader.read_bool().expect("Failed to read is_favorite");
+        let is_favorite = mii_reader.read_bool()?;
 
         let mut name_chars: [u16; 10] = [0; 10];
         for c in name_chars.iter_mut() {
-            *c = mii_reader
-                .read_u16(16)
-                .expect("Failed to read mii name bytes");
+            *c = mii_reader.read_u16(16)?;
         }
         let name = get_name(&name_chars);
 
-        let height = mii_reader.read_u8(8).expect("Failed to read height");
+        let height = mii_reader.read_u8(8)?;
 
-        let weight = mii_reader
-            .read_u8(8)
-            .expect("Failed to read weight (fatass)");
+        let weight = mii_reader.read_u8(8)?;
 
-        let mii_id1 = mii_reader.read_u8(8).expect("Failed to read Mii ID 1");
-        let mii_id2 = mii_reader.read_u8(8).expect("Failed to read Mii ID 2");
-        let mii_id3 = mii_reader.read_u8(8).expect("Failed to read Mii ID 3");
-        let mii_id4 = mii_reader.read_u8(8).expect("Failed to read Mii ID 4");
-        let system_id0 = mii_reader.read_u8(8).expect("Failed to read System ID 0");
-        let system_id1 = mii_reader.read_u8(8).expect("Failed to read System ID 1");
-        let system_id2 = mii_reader.read_u8(8).expect("Failed to read System ID 2");
-        let system_id3 = mii_reader.read_u8(8).expect("Failed to read System ID 3");
+        let mii_id1 = mii_reader.read_u8(8)?;
+        let mii_id2 = mii_reader.read_u8(8)?;
+        let mii_id3 = mii_reader.read_u8(8)?;
+        let mii_id4 = mii_reader.read_u8(8)?;
+        let system_id0 = mii_reader.read_u8(8)?;
+        let system_id1 = mii_reader.read_u8(8)?;
+        let system_id2 = mii_reader.read_u8(8)?;
+        let system_id3 = mii_reader.read_u8(8)?;
 
-        let face_shape = mii_reader.read_u8(3).expect("Failed to read face shape");
-        let skin_color = mii_reader.read_u8(3).expect("Failed to read skin color");
-        let facial_feature = mii_reader
-            .read_u8(4)
-            .expect("Failed to read facial feature");
+        let face_shape = mii_reader.read_u8(3)?;
+        let skin_color = mii_reader.read_u8(3)?;
+        let facial_feature = mii_reader.read_u8(4)?;
 
-        let unknown2 = mii_reader.read_u8(3).expect("Failed to read unknown2");
-        let mingle_off = mii_reader.read_bool().expect("Failed to read mingle_off");
-        let unknown3 = mii_reader.read_bool().expect("Failed to read unknown3");
-        let downloaded = mii_reader.read_bool().expect("Failed to read downloaded");
+        let unknown2 = mii_reader.read_u8(3)?;
+        let mingle_off = mii_reader.read_bool()?;
+        let unknown3 = mii_reader.read_bool()?;
+        let downloaded = mii_reader.read_bool()?;
 
-        let hair_type = mii_reader.read_u8(7).expect("Failed to read hair type");
-        let hair_color = mii_reader.read_u8(3).expect("Failed to read hair color");
-        let hair_part_reversed = mii_reader
-            .read_bool()
-            .expect("Failed to read hair part reversed");
+        let hair_type = mii_reader.read_u8(7)?;
+        let hair_color = mii_reader.read_u8(3)?;
+        let hair_part_reversed = mii_reader.read_bool()?;
 
-        let unknown4 = mii_reader.read_u8(5).expect("Failed to read unknown4");
+        let unknown4 = mii_reader.read_u8(5)?;
 
-        let eyebrow_type = mii_reader.read_u8(5).expect("Failed to read eyebrow type");
-        let unknown5 = mii_reader.read_bool().expect("Failed to read unknown5");
-        let eyebrow_rotation = mii_reader
-            .read_u8(4)
-            .expect("Failed to read eyebrow rotation");
-        let unknown6 = mii_reader.read_u8(6).expect("Failed to read unknown6");
-        let eyebrow_color = mii_reader.read_u8(3).expect("Failed to read eyebrow color");
-        let eyebrow_size = mii_reader.read_u8(4).expect("Failed to read eyebrow size");
-        let eyebrow_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read eyebrow vertical position");
-        let eyebrow_horizontal_spacing = mii_reader
-            .read_u8(4)
-            .expect("Failed to read eyebrow horizontal spacing");
+        let eyebrow_type = mii_reader.read_u8(5)?;
+        let unknown5 = mii_reader.read_bool()?;
+        let eyebrow_rotation = mii_reader.read_u8(4)?;
+        let unknown6 = mii_reader.read_u8(6)?;
+        let eyebrow_color = mii_reader.read_u8(3)?;
+        let eyebrow_size = mii_reader.read_u8(4)?;
+        let eyebrow_vertical_pos = mii_reader.read_u8(5)?;
+        let eyebrow_horizontal_spacing = mii_reader.read_u8(4)?;
 
-        let eye_type = mii_reader.read_u8(6).expect("Failed to read eye type");
-        let unknown7 = mii_reader.read_u8(2).expect("Failed to read unknown7");
-        let eye_rotation = mii_reader.read_u8(3).expect("Failed to read eye rotation");
-        let eye_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read eye vertical position");
-        let eye_color = mii_reader.read_u8(3).expect("Failed to read eye color");
-        let unknown8 = mii_reader.read_bool().expect("Failed to read unknown8");
-        let eye_size = mii_reader.read_u8(3).expect("Failed to read eye size");
-        let eye_horizontal_spacing = mii_reader
-            .read_u8(4)
-            .expect("Failed to read eye horizontal spacing");
-        let unknown9 = mii_reader.read_u8(5).expect("Failed to read unknown9");
+        let eye_type = mii_reader.read_u8(6)?;
+        let unknown7 = mii_reader.read_u8(2)?;
+        let eye_rotation = mii_reader.read_u8(3)?;
+        let eye_vertical_pos = mii_reader.read_u8(5)?;
+        let eye_color = mii_reader.read_u8(3)?;
+        let unknown8 = mii_reader.read_bool()?;
+        let eye_size = mii_reader.read_u8(3)?;
+        let eye_horizontal_spacing = mii_reader.read_u8(4)?;
+        let unknown9 = mii_reader.read_u8(5)?;
 
-        let nose_type = mii_reader.read_u8(4).expect("Failed to read nose type");
-        let nose_size = mii_reader.read_u8(4).expect("Failed to read nose size");
-        let nose_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read nose vertical position");
-        let unknown10 = mii_reader.read_u8(3).expect("Failed to read unknown10");
+        let nose_type = mii_reader.read_u8(4)?;
+        let nose_size = mii_reader.read_u8(4)?;
+        let nose_vertical_pos = mii_reader.read_u8(5)?;
+        let unknown10 = mii_reader.read_u8(3)?;
 
-        let lip_type = mii_reader.read_u8(5).expect("Failed to read lip type");
-        let lip_color = mii_reader.read_u8(2).expect("Failed to read lip color");
-        let lip_size = mii_reader.read_u8(4).expect("Failed to read lip size");
-        let lip_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read lip vertical position");
+        let lip_type = mii_reader.read_u8(5)?;
+        let lip_color = mii_reader.read_u8(2)?;
+        let lip_size = mii_reader.read_u8(4)?;
+        let lip_vertical_pos = mii_reader.read_u8(5)?;
 
-        let glasses_type = mii_reader.read_u8(4).expect("Failed to read glasses type");
-        let glasses_color = mii_reader.read_u8(3).expect("Failed to read glasses color");
-        let unknown11 = mii_reader.read_bool().expect("Failed to read unknown11");
-        let glasses_size = mii_reader.read_u8(3).expect("Failed to read glasses size");
-        let glasses_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read glasses vertical position");
+        let glasses_type = mii_reader.read_u8(4)?;
+        let glasses_color = mii_reader.read_u8(3)?;
+        let unknown11 = mii_reader.read_bool()?;
+        let glasses_size = mii_reader.read_u8(3)?;
+        let glasses_vertical_pos = mii_reader.read_u8(5)?;
 
-        let mustache_type = mii_reader.read_u8(2).expect("Failed to read mustache type");
-        let beard_type = mii_reader.read_u8(2).expect("Failed to read beard type");
-        let facial_hair_color = mii_reader
-            .read_u8(3)
-            .expect("Failed to read facial hair color");
-        let mustache_size = mii_reader.read_u8(4).expect("Failed to read mustache size");
-        let mustache_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read mustache vertical position");
+        let mustache_type = mii_reader.read_u8(2)?;
+        let beard_type = mii_reader.read_u8(2)?;
+        let facial_hair_color = mii_reader.read_u8(3)?;
+        let mustache_size = mii_reader.read_u8(4)?;
+        let mustache_vertical_pos = mii_reader.read_u8(5)?;
 
-        let has_mole = mii_reader.read_bool().expect("Failed to read has_mole");
-        let mole_size = mii_reader.read_u8(4).expect("Failed to read mole size");
-        let mole_vertical_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read mole vertical position");
-        let mole_horizontal_pos = mii_reader
-            .read_u8(5)
-            .expect("Failed to read mole horizontal position");
-        let unknown12 = mii_reader.read_bool().expect("Failed to read unknown12");
+        let has_mole = mii_reader.read_bool()?;
+        let mole_size = mii_reader.read_u8(4)?;
+        let mole_vertical_pos = mii_reader.read_u8(5)?;
+        let mole_horizontal_pos = mii_reader.read_u8(5)?;
+        let unknown12 = mii_reader.read_bool()?;
 
         let mut name_chars: [u16; 10] = [0; 10];
         for c in name_chars.iter_mut() {
-            *c = mii_reader
-                .read_u16(16)
-                .expect("Failed to read mii name bytes");
+            *c = mii_reader.read_u16(16)?;
         }
         let creator_name: String = get_name(&name_chars);
 
-        Self {
+        Ok(Self {
             unknown1,
             is_girl,
             month,
@@ -278,7 +242,7 @@ impl Mii {
             mole_horizontal_pos,
             unknown12,
             creator_name,
-        }
+        })
     }
 
     pub fn unknown1(&self) -> bool {
