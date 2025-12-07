@@ -126,14 +126,18 @@ fn test_rkg_input_data() {
         InputData::new(&rkg_data[0x88..rkg_data.len() - 0x04]).expect("Couldn't read input data");
 
     assert_eq!(input_data.face_input_count(), 0x18);
-    assert_eq!(input_data.direction_input_count(), 0x037B);
-    assert_eq!(input_data.trick_input_count(), 0x09);
+    assert_eq!(input_data.stick_input_count(), 0x037B);
+    assert_eq!(input_data.dpad_input_count(), 0x09);
 
     for (index, face_input) in input_data.face_inputs().iter().enumerate() {
         println!("Face input {}: {:?}", index + 1, face_input);
     }
     println!("");
-    for (index, trick_input) in input_data.trick_inputs().iter().enumerate() {
-        println!("Trick input {}: {:?}", index + 1, trick_input);
+    for (index, stick_input) in input_data.stick_inputs().iter().enumerate() {
+        println!("Stick input {}: {:?}", index + 1, stick_input);
+    }
+    println!("");
+    for (index, dpad_input) in input_data.dpad_inputs().iter().enumerate() {
+        println!("DPad input {}: {:?}", index + 1, dpad_input);
     }
 }

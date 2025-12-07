@@ -3,30 +3,33 @@
 use bitreader::BitReader;
 
 use crate::input_data::face_input::FaceInput;
-use crate::input_data::trick_input::TrickInput;
+use crate::input_data::dpad_input::DPadInput;
+use crate::input_data::stick_input::StickInput;
 
-pub mod direction_input;
+pub mod stick_input;
 pub mod face_input;
-pub mod trick_input;
+pub mod dpad_input;
 
 #[derive(thiserror::Error, Debug)]
 pub enum InputDataError {
     #[error("Face Input Error: {0}")]
     FaceInputError(#[from] face_input::FaceInputError),
-    #[error("Trick Input Error: {0}")]
-    TrickInputError(#[from] trick_input::TrickInputError),
+    #[error("DPad Input Error: {0}")]
+    DPadInputError(#[from] dpad_input::DPadInputError),
+    #[error("Stick Input Error: {0}")]
+    StickInputError(#[from] stick_input::StickInputError),
     #[error("BitReader Error: {0}")]
     BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 pub struct InputData {
     face_input_count: u16,
-    direction_input_count: u16,
-    trick_input_count: u16,
+    stick_input_count: u16,
+    dpad_input_count: u16,
 
     face_inputs: Vec<FaceInput>,
-    // direction_inputs: Vec<DirectionInput>,
-    trick_inputs: Vec<TrickInput>,
+    stick_inputs: Vec<StickInput>,
+    dpad_inputs: Vec<DPadInput>,
 }
 
 impl InputData {
@@ -37,8 +40,8 @@ impl InputData {
         let mut input_reader = BitReader::new(input_data);
 
         let face_input_count = input_reader.read_u16(16)?;
-        let direction_input_count = input_reader.read_u16(16)?;
-        let trick_input_count = input_reader.read_u16(16)?;
+        let stick_input_count = input_reader.read_u16(16)?;
+        let dpad_input_count = input_reader.read_u16(16)?;
         input_reader.skip(16)?; // padding
 
         let mut face_inputs: Vec<FaceInput> = Vec::new();
@@ -46,23 +49,23 @@ impl InputData {
             face_inputs.push(FaceInput::try_from(&mut input_reader)?);
         }
 
-        // [TEMPORARY] Skip over direction inputs because it's not yet implemented
-        for _ in 0..direction_input_count {
-            input_reader.skip(16)?;
+        let mut stick_inputs: Vec<StickInput> = Vec::new();
+        for _ in 0..stick_input_count {
+            stick_inputs.push(StickInput::try_from(&mut input_reader)?);
         }
 
-        let mut trick_inputs: Vec<TrickInput> = Vec::new();
-        for _ in 0..trick_input_count {
-            trick_inputs.push(TrickInput::try_from(&mut input_reader)?);
+        let mut dpad_inputs: Vec<DPadInput> = Vec::new();
+        for _ in 0..dpad_input_count {
+            dpad_inputs.push(DPadInput::try_from(&mut input_reader)?);
         }
 
         Ok(Self {
             face_input_count,
-            direction_input_count,
-            trick_input_count,
+            stick_input_count,
+            dpad_input_count,
             face_inputs,
-            // direction_inputs,
-            trick_inputs,
+            stick_inputs,
+            dpad_inputs,
         })
     }
 
@@ -70,19 +73,23 @@ impl InputData {
         self.face_input_count
     }
 
-    pub fn direction_input_count(&self) -> u16 {
-        self.direction_input_count
+    pub fn stick_input_count(&self) -> u16 {
+        self.stick_input_count
     }
 
-    pub fn trick_input_count(&self) -> u16 {
-        self.trick_input_count
+    pub fn dpad_input_count(&self) -> u16 {
+        self.dpad_input_count
     }
 
     pub fn face_inputs(&self) -> &[FaceInput] {
         &self.face_inputs
     }
 
-    pub fn trick_inputs(&self) -> &[TrickInput] {
-        &self.trick_inputs
+    pub fn stick_inputs(&self) -> &[StickInput] {
+        &self.stick_inputs
+    }
+
+    pub fn dpad_inputs(&self) -> &[DPadInput] {
+        &self.dpad_inputs
     }
 }

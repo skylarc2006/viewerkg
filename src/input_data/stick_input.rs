@@ -1,0 +1,64 @@
+#[derive(thiserror::Error, Debug)]
+pub enum StickInputError {
+    #[error("Invalid Stick Input")]
+    InvalidStickInput,
+    #[error("BitReader Error: {0}")]
+    BitReaderError(#[from] bitreader::BitReaderError),
+}
+
+#[derive(Debug)]
+pub struct StickInput {
+    x: i8,
+    y: i8,
+    frame_duration: u8,
+}
+
+impl StickInput {
+    pub fn x(&self) -> i8 {
+        self.x
+    }
+    
+    pub fn y(&self) -> i8 {
+        self.y
+    }
+
+    pub fn frame_duration(&self) -> u8 {
+        self.frame_duration
+    }
+}
+
+impl TryFrom<u16> for StickInput {
+    type Error = StickInputError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        let bytes = value.to_be_bytes();
+
+        let x = (bytes[0] & 0xF0) >> 4;
+        let y = (bytes[0] & 0x0F) >> 4;
+
+        if x > 14 || y > 14 {
+            return Err(StickInputError::InvalidStickInput);
+        }
+
+        // store x and y as ranging from -7 to +7, as that's more intuitive for left/right or up/down
+        let x = x as i8 - 7;
+        let y = y as i8 - 7;
+
+        let frame_duration = bytes[1];
+
+        Ok(Self {
+            x,
+            y,
+            frame_duration,
+        })
+    }
+}
+
+impl TryFrom<&mut bitreader::BitReader<'_>> for StickInput {
+    type Error = StickInputError;
+
+    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
+        StickInput::try_from(value.read_u16(16)?)
+    }
+}
+
