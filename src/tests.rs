@@ -125,15 +125,7 @@ fn test_rkg_input_data() {
     let input_data =
         InputData::new(&rkg_data[0x88..rkg_data.len() - 0x04]).expect("Couldn't read input data");
 
-    for (index, face_input) in input_data.face_inputs().iter().enumerate() {
-        println!("Face input {}: {:?}", index + 1, face_input);
-    }
-    println!("");
-    for (index, stick_input) in input_data.stick_inputs().iter().enumerate() {
-        println!("Stick input {}: {:?}", index + 1, stick_input);
-    }
-    println!("");
-    for (index, dpad_input) in input_data.dpad_inputs().iter().enumerate() {
-        println!("DPad input {}: {:?}", index + 1, dpad_input);
+    for (index, input) in input_data.inputs().iter().enumerate() {
+        println!("Input {}: {:?}", index + 1, input);
     }
 }

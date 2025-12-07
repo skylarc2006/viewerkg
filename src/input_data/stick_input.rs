@@ -44,7 +44,7 @@ impl TryFrom<u16> for StickInput {
         let bytes = value.to_be_bytes();
 
         let x = (bytes[0] & 0xF0) >> 4;
-        let y = (bytes[0] & 0x0F) >> 4;
+        let y = bytes[0] & 0x0F;
 
         if x > 14 || y > 14 {
             return Err(StickInputError::InvalidStickInput);

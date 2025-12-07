@@ -2,10 +2,12 @@
 
 use bitreader::BitReader;
 
-use crate::input_data::dpad_input::DPadInput;
+use crate::input_data::input::Input;
+use crate::input_data::dpad_input::{DPadButton, DPadInput};
 use crate::input_data::face_input::FaceInput;
 use crate::input_data::stick_input::StickInput;
 
+pub mod input;
 pub mod dpad_input;
 pub mod face_input;
 pub mod stick_input;
@@ -23,7 +25,6 @@ pub enum InputDataError {
 }
 
 pub struct InputData {
-    // TODO: combine these into a single Vec, define an Input struct capable of holding all pressed buttons and stick state
     face_inputs: Vec<FaceInput>,
     stick_inputs: Vec<StickInput>,
     dpad_inputs: Vec<DPadInput>,
@@ -81,6 +82,79 @@ impl InputData {
             stick_inputs,
             dpad_inputs,
         })
+    }
+
+    pub fn inputs(&self) -> Vec<Input> {
+        let mut result = Vec::new();
+
+        // Track current position in each input stream
+        let mut face_idx = 0;
+        let mut stick_idx = 0;
+        let mut dpad_idx = 0;
+
+        // Track how many frames consumed from current input in each stream
+        let mut face_offset = 0u32;
+        let mut stick_offset = 0u32;
+        let mut dpad_offset = 0u32;
+
+        // Continue until all streams are exhausted
+        while face_idx < self.face_inputs.len()
+            || stick_idx < self.stick_inputs.len()
+            || dpad_idx < self.dpad_inputs.len()
+        {
+            // Get current input from each stream (or defaults if exhausted)
+            let face = self.face_inputs.get(face_idx);
+            let stick = self.stick_inputs.get(stick_idx);
+            let dpad = self.dpad_inputs.get(dpad_idx);
+
+            // Calculate remaining frames for current input in each stream
+            let face_remaining = face
+                .map(|f| f.frame_duration() - face_offset)
+                .unwrap_or(u32::MAX);
+            let stick_remaining = stick
+                .map(|s| s.frame_duration() as u32 - stick_offset)
+                .unwrap_or(u32::MAX);
+            let dpad_remaining = dpad
+                .map(|d| d.frame_duration() - dpad_offset)
+                .unwrap_or(u32::MAX);
+
+            // Find the minimum remaining frames (when next change occurs)
+            let duration = face_remaining.min(stick_remaining).min(dpad_remaining);
+
+            if duration == u32::MAX { // if all streams exhausted
+                break;
+            }
+
+            // Create combined input for this duration
+            let combined = Input::new(
+                face.map(|f| f.buttons().clone()).unwrap_or_default(),
+                stick.map(|s| s.x()).unwrap_or(0),
+                stick.map(|s| s.y()).unwrap_or(0),
+                dpad.map(|d| d.button()).unwrap_or(DPadButton::None),
+                duration,
+            );
+            result.push(combined);
+
+            // Update offsets and advance indices where needed
+            face_offset += duration;
+            stick_offset += duration;
+            dpad_offset += duration;
+
+            if face.is_some() && face_offset >= face.unwrap().frame_duration() {
+                face_idx += 1;
+                face_offset = 0;
+            }
+            if stick.is_some() && stick_offset >= stick.unwrap().frame_duration() as u32 {
+                stick_idx += 1;
+                stick_offset = 0;
+            }
+            if dpad.is_some() && dpad_offset >= dpad.unwrap().frame_duration() {
+                dpad_idx += 1;
+                dpad_offset = 0;
+            }
+        }
+
+        result
     }
 
     pub fn face_inputs(&self) -> &[FaceInput] {
