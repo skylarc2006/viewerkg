@@ -120,6 +120,7 @@ fn test_rkg_input_data() {
     let input_data =
         InputData::new(&rkg_data[0x88..rkg_data.len() - 0x04]).expect("Couldn't read input data");
 
-
+    for (index, input) in input_data.inputs().iter().enumerate() {
+        println!("Input {}: {:?}", index, input);
     }
 }
