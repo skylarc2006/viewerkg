@@ -13,13 +13,7 @@ use std::io::Read;
 
 #[test]
 fn test_rkg_header() {
-    let mut rkg_data: Vec<u8> = Vec::new();
-    std::fs::File::open("./test_ghosts/JC_LC.rkg")
-        .expect("Couldn't find `./test_ghosts/JC_LC.rkg`")
-        .read_to_end(&mut rkg_data)
-        .expect("Couldn't read bytes in file");
-
-    let header: Header = Header::new(&rkg_data[0x00..0x88]).expect("Couldn't read header");
+    let header = Header::new_from_path("./test_ghosts/JC_LC.rkg").expect("Couldn't read header");
 
     // General ghost info
     assert_eq!(header.finish_time().minutes(), 1);
@@ -31,9 +25,9 @@ fn test_rkg_header() {
     assert_eq!(header.combo().character(), Character::KingBoo);
     assert_eq!(header.date_set(), &Date::new(2025, 11, 12).unwrap());
     assert_eq!(header.controller(), Controller::Classic);
-    assert_eq!(header.is_compressed(), false);
+    assert!(!header.is_compressed());
     assert_eq!(header.ghost_type(), GhostType::ExpertStaff);
-    assert_eq!(header.is_automatic_drift(), true);
+    assert!(header.is_automatic_drift());
     assert_eq!(header.decompressed_input_data_length(), 1856);
     assert_eq!(header.lap_count(), 3);
     assert_eq!(header.lap_split_times()[0].to_string(), "00:25.540");
@@ -44,7 +38,7 @@ fn test_rkg_header() {
     assert_eq!(header.location_code(), 0xFFFF);
 
     // Mii Data
-    assert_eq!(header.mii_data().is_girl(), false);
+    assert!(!header.mii_data().is_girl());
     assert_eq!(header.mii_data().month(), 1);
     assert_eq!(header.mii_data().day(), 1);
     assert_eq!(header.mii_data().favorite_color(), 4);
@@ -59,12 +53,12 @@ fn test_rkg_header() {
     assert_eq!(header.mii_data().skin_color(), 1);
     assert_eq!(header.mii_data().facial_feature(), 0);
 
-    assert_eq!(header.mii_data().mingle_off(), true);
-    assert_eq!(header.mii_data().downloaded(), false);
+    assert!(header.mii_data().mingle_off());
+    assert!(!header.mii_data().downloaded());
 
     assert_eq!(header.mii_data().hair_type(), 33);
     assert_eq!(header.mii_data().hair_color(), 2);
-    assert_eq!(header.mii_data().hair_part_reversed(), false);
+    assert!(!header.mii_data().hair_part_reversed());
 
     assert_eq!(header.mii_data().eyebrow_type(), 23);
     assert_eq!(header.mii_data().eyebrow_rotation(), 5);
@@ -100,7 +94,7 @@ fn test_rkg_header() {
     assert_eq!(header.mii_data().mustache_size(), 4);
     assert_eq!(header.mii_data().mustache_vertical_pos(), 10);
 
-    assert_eq!(header.mii_data().has_mole(), false);
+    assert!(!header.mii_data().has_mole());
     assert_eq!(header.mii_data().mole_size(), 4);
     assert_eq!(header.mii_data().mole_vertical_pos(), 20);
     assert_eq!(header.mii_data().mole_horizontal_pos(), 2);
@@ -118,6 +112,7 @@ fn test_rkg_input_data() {
         .read_to_end(&mut rkg_data)
         .expect("Couldn't read bytes in file");
 
+    // TODO: Handle CKGD
     /* In vanilla ghosts, input data always ends 4 bytes before the end of the file,
      * but with a CTGP ghost the input data would end [CTGP info footer length] bytes
      * before the end of the file.
@@ -125,7 +120,6 @@ fn test_rkg_input_data() {
     let input_data =
         InputData::new(&rkg_data[0x88..rkg_data.len() - 0x04]).expect("Couldn't read input data");
 
-    for (index, input) in input_data.inputs().iter().enumerate() {
-        println!("Input {}: {:?}", index + 1, input);
+
     }
 }

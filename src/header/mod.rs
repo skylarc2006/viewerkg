@@ -10,6 +10,8 @@ use crate::header::{
     slot_id::{SlotId, SlotIdError},
 };
 
+use std::io::Read;
+
 pub mod combo;
 pub mod controller;
 pub mod date;
@@ -40,6 +42,8 @@ pub enum HeaderError {
     GhostTypeError(#[from] GhostTypeError),
     #[error("Mii Error: {0}")]
     MiiError(#[from] MiiError),
+    #[error("Io Error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 /// All the data in the Header of an RKGD
@@ -64,7 +68,13 @@ pub struct Header {
 }
 
 impl Header {
-    /// Reads header from RKGD bytes
+    /// Reads header from a file at the path
+    pub fn new_from_path<P: AsRef<std::path::Path>>(p: P) -> Result<Self, HeaderError> {
+        let mut rkg_data = [0u8; 0x88];
+        std::fs::File::open(p)?.read_exact(&mut rkg_data)?;
+        Self::new(&rkg_data)
+    }
+
     pub fn new(header_data: &[u8]) -> Result<Self, HeaderError> {
         let mut header_reader = BitReader::new(header_data);
 
