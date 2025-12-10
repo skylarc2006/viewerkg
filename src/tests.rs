@@ -1,4 +1,5 @@
 use crate::{
+    ctgp_metadata::CTGPMetadata,
     header::{
         Header,
         combo::{Character, Vehicle},
@@ -123,4 +124,39 @@ fn test_rkg_input_data() {
     assert_eq!(input_data.face_input_count(), 0x18);
     assert_eq!(input_data.stick_input_count(), 0x037B);
     assert_eq!(input_data.dpad_input_count(), 0x09);
+}
+
+#[test]
+fn test_ctgp_metadata() {
+    let mut rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/JC_LC_Compressed.rkg")
+        .expect("Couldn't find `./test_ghosts/JC_LC_Compressed.rkg`")
+        .read_to_end(&mut rkg_data)
+        .expect("Couldn't read bytes in file");
+
+    let ctgp_len_offset = rkg_data.len() - 0xC;
+    let metadata_length = u32::from_be_bytes([
+        rkg_data[ctgp_len_offset],
+        rkg_data[ctgp_len_offset + 1],
+        rkg_data[ctgp_len_offset + 2],
+        rkg_data[ctgp_len_offset + 3],
+    ]) as usize;
+
+    let ctgp_metadata =
+        CTGPMetadata::new(&rkg_data[&rkg_data.len() - metadata_length..&rkg_data.len() - 0x04])
+            .expect("Failed to read CTGP metadata");
+
+    assert_eq!(
+        ctgp_metadata.track_sha1(),
+        [
+            0x1A, 0xE1, 0xA7, 0xD8, 0x94, 0x96, 0x0B, 0x38, 0xE0, 0x9E, 0x74, 0x94, 0x37, 0x33,
+            0x78, 0xD8, 0x73, 0x05, 0xA1, 0x63
+        ]
+    );
+    assert_eq!(
+        ctgp_metadata.player_id().to_be_bytes(),
+        [0xFD, 0x31, 0x97, 0xB0, 0x7D, 0x9D, 0x2B, 0x84]
+    );
+    let shroomstrat: [u8; 8] = [3, 0, 0, 0, 0, 0, 0, 0];
+    assert_eq!(ctgp_metadata.shroomstrat(), &shroomstrat);
 }
