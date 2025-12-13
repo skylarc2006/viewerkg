@@ -146,7 +146,7 @@ fn test_ctgp_metadata() {
     let ctgp_metadata =
         CTGPMetadata::new(&rkg_data[&rkg_data.len() - metadata_length..&rkg_data.len() - 0x04])
             .expect("Failed to read CTGP metadata");
-
+    
     assert_eq!(
         ctgp_metadata.track_sha1(),
         [

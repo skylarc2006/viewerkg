@@ -9,7 +9,7 @@ pub enum CTGPMetadataError {
     #[error("Ghost is not CKGD")]
     NotCKGD,
     #[error("Category Error: {0}")]
-    DPadInputError(#[from] category::CategoryError),
+    CategoryError(#[from] category::CategoryError),
     #[error("BitReader Error: {0}")]
     BitReaderError(#[from] bitreader::BitReaderError),
 }
@@ -22,8 +22,8 @@ pub struct CTGPMetadata {
     ctgp_version: u32,
     unknown: [u8; 0x20],
     true_lap_time_subtractions: [f32; 7],
-    rtc_race_end: DateTime<Utc>,
-    rtc_race_begins: DateTime<Utc>,
+    rtc_race_end: NaiveDateTime,
+    rtc_race_begins: NaiveDateTime,
     rtc_time_paused: TimeDelta,
     my_stuff_enabled: bool,
     my_stuff_used: bool,
@@ -165,11 +165,11 @@ impl CTGPMetadata {
         &self.true_lap_time_subtractions
     }
 
-    pub fn rtc_race_end(&self) -> DateTime<Utc> {
+    pub fn rtc_race_end(&self) -> NaiveDateTime {
         self.rtc_race_end
     }
 
-    pub fn rtc_race_begins(&self) -> DateTime<Utc> {
+    pub fn rtc_race_begins(&self) -> NaiveDateTime {
         self.rtc_race_begins
     }
 
@@ -246,7 +246,7 @@ impl CTGPMetadata {
     }
 }
 
-fn datetime_from_timestamp(tick_count: u64) -> DateTime<Utc> {
+fn datetime_from_timestamp(tick_count: u64) -> NaiveDateTime {
     let clock_rate = 60_750_000.0; // 60.75 MHz tick speed
     let epoch_shift = 946_684_800; // Shifts epoch from 1970-01-01 to 2000-01-01 (which is what the Wii uses)
     let total_seconds = tick_count as f64 / clock_rate;
@@ -255,7 +255,7 @@ fn datetime_from_timestamp(tick_count: u64) -> DateTime<Utc> {
     let duration = Duration::nanoseconds(total_nanoseconds);
     let epoch = DateTime::from_timestamp(epoch_shift, 0).unwrap();
 
-    epoch + duration
+    epoch.naive_utc() + duration
 }
 
 fn duration_from_ticks(tick_count: u64) -> TimeDelta {

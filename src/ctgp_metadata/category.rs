@@ -17,11 +17,18 @@ pub enum Category {
 impl TryFrom<u8> for Category {
     type Error = CategoryError;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
+        /*
+         * TODO: Test many different TAS ghosts and see if there are any
+         * extra category values not listed here.
+         * 
+         * Nearly all TAS CTGP ghosts have category value 0x13 or 0x23, but
+         * in a rare instance 0x03 was seen on a No Glitch TAS ghost
+         */
         match value {
             0x00 => Ok(Self::NoGlitch),
             0x01 => Ok(Self::Glitch),
             0x13 => Ok(Self::GlitchTAS),
-            0x23 => Ok(Self::NoGlitchTAS),
+            0x03 | 0x23 => Ok(Self::NoGlitchTAS),
             _ => Err(CategoryError::NonexistentCategory),
         }
     }
