@@ -1,16 +1,14 @@
 use crate::{
-    ctgp_metadata::CTGPMetadata,
-    header::{
+    byte_handler::ByteHandler, ctgp_metadata::CTGPMetadata, header::{
         Header,
         combo::{Character, Vehicle},
         controller::Controller,
         date::Date,
         ghost_type::GhostType,
         slot_id::SlotId,
-    },
-    input_data::InputData,
+    }, input_data::InputData
 };
-use std::io::Read;
+use std::{io::Read, str::Bytes};
 
 #[test]
 fn test_rkg_header() {
@@ -114,7 +112,7 @@ fn test_rkg_input_data() {
         .expect("Couldn't read bytes in file");
 
     // TODO: Handle CKGD
-    /* 
+    /*
      * In vanilla ghosts, input data always ends 4 bytes before the end of the file,
      * but with a CTGP ghost the input data would end [CTGP info footer length] bytes
      * before the end of the file.
@@ -161,5 +159,8 @@ fn test_ctgp_metadata() {
     let shroomstrat: [u8; 8] = [3, 0, 0, 0, 0, 0, 0, 0];
     assert_eq!(ctgp_metadata.shroomstrat(), &shroomstrat);
     println!("Date set: {}", ctgp_metadata.rtc_race_end());
-    println!("Pause time: {}ms", ctgp_metadata.rtc_time_paused().num_milliseconds());
+    println!(
+        "Pause time: {}ms",
+        ctgp_metadata.rtc_time_paused().num_milliseconds()
+    );
 }

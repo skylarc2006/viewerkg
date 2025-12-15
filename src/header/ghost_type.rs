@@ -1,3 +1,5 @@
+use crate::byte_handler::FromByteHandler;
+
 #[derive(thiserror::Error, Debug)]
 pub enum GhostTypeError {
     #[error("Nonexistent Ghost Type")]
@@ -53,9 +55,11 @@ impl From<GhostType> for u8 {
     }
 }
 
-impl TryFrom<&mut bitreader::BitReader<'_>> for GhostType {
-    type Error = GhostTypeError;
-    fn try_from(value: &mut bitreader::BitReader) -> Result<Self, Self::Error> {
-        value.read_u8(7)?.try_into()
+impl FromByteHandler for GhostType {
+    type Err = GhostTypeError;
+    fn from_byte_handler<T: TryInto<crate::byte_handler::ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
+        let mut handler = handler.try_into().map_err(|_|()).unwrap();
+        handler.shift_right(2);
+        (handler.copy_bytes()[3] & 0x7F).try_into()
     }
 }

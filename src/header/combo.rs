@@ -1,3 +1,5 @@
+use crate::byte_handler::{ByteHandler, FromByteHandler};
+
 /// Struct that handles the validity of the Character/Vehicle combo used in the RKG file
 pub struct Combo {
     character: Character,
@@ -6,22 +8,26 @@ pub struct Combo {
 
 #[derive(thiserror::Error, Debug)]
 pub enum ComboError {
+    #[error("Insufficiently Long Iterator")]
+    InsufficientlyLongIterator,
     #[error("The combo has incongruent weight classes")]
     IncongruentWeightClasses,
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
-    #[error("Invalid Character ID")]
-    InvalidCharacterId,
     #[error("Invalid Vehicle ID")]
     InvalidVehicleId,
+    #[error("Invalid Character ID")]
+    InvalidCharacterId,
+    #[error("Impossible Character ID")]
+    ImpossibleCharacterId,
 }
 
 impl Combo {
+    #[inline(always)]
     pub fn new(vehicle: Vehicle, character: Character) -> Result<Self, ComboError> {
-        match character.get_weight_class() == vehicle.get_weight_class() {
-            true => Ok(Self { character, vehicle }),
-            false => Err(ComboError::IncongruentWeightClasses),
+        if character.get_weight_class() != vehicle.get_weight_class() {
+            return Err(ComboError::IncongruentWeightClasses);
         }
+
+        Ok(Self { vehicle, character })
     }
 
     pub fn character(&self) -> Character {
@@ -33,12 +39,21 @@ impl Combo {
     }
 }
 
-impl TryFrom<&mut bitreader::BitReader<'_>> for Combo {
-    type Error = ComboError;
-    fn try_from(value: &mut bitreader::BitReader) -> Result<Self, Self::Error> {
+impl FromByteHandler for Combo {
+    type Err = ComboError;
+    /// Expects Header 0x08..0x0A
+    fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
+        let mut handler = handler.try_into().map_err(|_|()).expect("TODO: Handle this!");
+
+        handler.shift_right(2);
+        let vehicle = handler.copy_bytes()[3];
+        handler.shift_right(2);
+
         Self::new(
-            Vehicle::try_from(value.read_u8(6)?).map_err(|_| ComboError::InvalidVehicleId)?,
-            Character::try_from(value.read_u8(6)?).map_err(|_| ComboError::InvalidCharacterId)?,
+            Vehicle::try_from(vehicle)
+               .map_err(|_| ComboError::InvalidVehicleId)?,
+            Character::try_from(handler.copy_bytes()[4] & 0x3F)
+                .map_err(|_| ComboError::InvalidCharacterId)?,
         )
     }
 }
@@ -112,6 +127,58 @@ pub enum Character {
     MenuPeach,
     MenuDaisy,
     MenuRosalina,
+}
+
+impl Character {
+    fn is_impossible(self) -> bool {
+        match self {
+            Self::Mario
+            | Self::BabyPeach
+            | Self::Waluigi
+            | Self::Bowser
+            | Self::BabyDaisy
+            | Self::DryBones
+            | Self::BabyMario
+            | Self::Luigi
+            | Self::Toad
+            | Self::DonkeyKong
+            | Self::Yoshi
+            | Self::Wario
+            | Self::BabyLuigi
+            | Self::Toadette
+            | Self::KoopaTroopa
+            | Self::Daisy
+            | Self::Peach
+            | Self::Birdo
+            | Self::DiddyKong
+            | Self::KingBoo
+            | Self::BowserJr
+            | Self::DryBowser
+            | Self::FunkyKong | Self::Rosalina
+            | Self::SmallMiiOutfitAMale
+            | Self::SmallMiiOutfitAFemale
+            | Self::SmallMiiOutfitBMale
+            | Self::SmallMiiOutfitBFemale
+            | Self::SmallMiiOutfitCMale
+            | Self::SmallMiiOutfitCFemale
+            | Self::MediumMiiOutfitAMale
+            | Self::MediumMiiOutfitAFemale
+            | Self::MediumMiiOutfitBMale
+            | Self::MediumMiiOutfitBFemale
+            | Self::MediumMiiOutfitCMale
+            | Self::MediumMiiOutfitCFemale
+            | Self::LargeMiiOutfitAMale
+            | Self::LargeMiiOutfitAFemale
+            | Self::LargeMiiOutfitBMale
+            | Self::LargeMiiOutfitBFemale
+            | Self::LargeMiiOutfitCMale
+            | Self::LargeMiiOutfitCFemale
+             => false,
+            Self::MenuPeach | Self::MenuDaisy | Self::MenuRosalina| Self::MediumMii
+            | Self::SmallMii
+            | Self::LargeMii => true,
+        }
+    }
 }
 
 impl TryFrom<u8> for Character {

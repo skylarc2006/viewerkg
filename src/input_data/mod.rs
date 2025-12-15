@@ -151,7 +151,9 @@ impl InputData {
             stick_offset += duration;
             dpad_offset += duration;
 
-            if face.is_some() && face_offset >= face.unwrap().frame_duration() {
+            if let Some(face) = face
+                && face_offset >= face.frame_duration()
+            {
                 face_idx += 1;
                 face_offset = 0;
             }

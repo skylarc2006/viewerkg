@@ -1,6 +1,4 @@
-use bitreader::BitReader;
-
-use crate::header::{
+use crate::{byte_handler::{ByteHandler, FromByteHandler}, header::{
     combo::{Combo, ComboError},
     controller::{Controller, ControllerError},
     date::{Date, DateError},
@@ -8,7 +6,7 @@ use crate::header::{
     in_game_time::{InGameTime, InGameTimeError},
     mii::{Mii, MiiError},
     slot_id::{SlotId, SlotIdError},
-};
+}};
 
 use std::io::Read;
 
@@ -17,8 +15,8 @@ pub mod controller;
 pub mod date;
 pub mod ghost_type;
 pub mod in_game_time;
-pub mod mii;
 pub mod slot_id;
+pub mod mii;
 
 #[derive(thiserror::Error, Debug)]
 pub enum HeaderError {
@@ -75,72 +73,41 @@ impl Header {
         Self::new(&rkg_data)
     }
 
+    /// Reads header from slice
     pub fn new(header_data: &[u8]) -> Result<Self, HeaderError> {
-        let mut header_reader = BitReader::new(header_data);
-
-        if header_reader.read_u32(32)? != 0x524B4744 {
-            return Err(HeaderError::NotRKGD);
-        } else if header_data.len() != 0x88 {
+        if header_data.len() != 0x88 {
             return Err(HeaderError::NotCorrectSize);
         }
-
-        let finish_time = InGameTime::try_from(&mut header_reader)?;
-        let slot_id = SlotId::try_from(&mut header_reader)?;
-
-        header_reader.skip(2)?; // Padding
-
-        let combo = Combo::try_from(&mut header_reader)?;
-        let date_set = Date::try_from(&mut header_reader)?;
-        let controller = Controller::try_from(&mut header_reader)?;
-
-        header_reader.skip(4)?;
-
-        let is_compressed = header_reader
-            .read_bool()
-            .expect("Failed to read is_compressed");
-
-        header_reader.skip(2)?;
-        let ghost_type = GhostType::try_from(&mut header_reader)?;
-
-        let is_automatic_drift = header_reader.read_bool()?;
-
-        header_reader.skip(1)?;
-
-        let decompressed_input_data_length = header_reader.read_u16(16)?;
-
-        let lap_count = header_reader.read_u8(8)?;
-
-        let mut lap_split_times: [InGameTime; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for index in 0..lap_count {
-            lap_split_times[index as usize] = InGameTime::try_from(&mut header_reader)?;
+        if header_data[0..4] == [0x52, 0x4B, 0x47, 0x44] {
+            return Err(HeaderError::NotRKGD);
         }
 
-        // Skip non-read laps
-        header_reader.skip(((9 - lap_count) * 24) as u64)?;
+        let finish_time = InGameTime::from_byte_handler(&header_data[4..7])?;
+        let slot_id = SlotId::from_byte_handler(header_data[7])?;
+        let combo = Combo::from_byte_handler(&header_data[0x08..=0x0A])?;
+        let date_set = Date::from_byte_handler(&header_data[0x09..=0x0B])?;
+        let controller = Controller::from_byte_handler(header_data[0x0B])?;
+        let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(3);
+        let ghost_type = GhostType::from_byte_handler(&header_data[0x0C..=0x0D])?;
+        let is_automatic_drift = ByteHandler::from(header_data[0x0D]).read_bool(0);
+        let decompressed_input_data_length = ByteHandler::try_from(&header_data[0x0E..=0x0F]).unwrap().copy_words()[1];
 
-        // Skip garbage RAM data
-        header_reader.skip(64)?;
+        let lap_count = header_data[0x10];
+        let mut lap_split_times: [InGameTime; 8] = [Default::default(); 8];
+        for index in 0..lap_count {
+            let start = (0x11 + index*3) as usize;
+            lap_split_times[index as usize] = InGameTime::from_byte_handler(&header_data[start..start+3])?;
+        }
 
-        let country_code = header_reader.read_u8(8)?;
-        let state_code = header_reader.read_u8(8)?;
+        let codes = ByteHandler::try_from(&header_data[0x34..=0x37]).unwrap();
+        let country_code = codes.copy_bytes()[0];
+        let state_code = codes.copy_bytes()[1];
+        let location_code = codes.copy_words()[1];
 
-        let location_code = header_reader.read_u16(16)?;
-
-        header_reader.skip(32)?;
-
-        let mii_data = Mii::try_from(&mut header_reader)?;
+        let mii_data = Mii::new(&header_data[0x3C..0x3C+0x4A])?;
 
         // TODO: Use CRC for its intended purpose and error out if wrong OR report mismatch
-        let mii_crc16 = header_reader.read_u16(16)?;
+        let mii_crc16 = ByteHandler::try_from(&header_data[0x86..=0x87]).unwrap().copy_words()[1];
 
         Ok(Self {
             finish_time,

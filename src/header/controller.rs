@@ -1,3 +1,5 @@
+use crate::byte_handler::FromByteHandler;
+
 #[derive(thiserror::Error, Debug)]
 pub enum ControllerError {
     #[error("Nonexistent Controller ID")]
@@ -12,6 +14,15 @@ pub enum Controller {
     Nunchuk,
     Classic,
     Gamecube,
+}
+
+impl FromByteHandler for Controller {
+    type Err = ControllerError;
+    fn from_byte_handler<T: TryInto<crate::byte_handler::ByteHandler>>(
+        handler: T,
+    ) -> Result<Self, Self::Err> {
+        (handler.try_into().map_err(|_|()).unwrap().copy_bytes()[3] & 0x0F).try_into()
+    }
 }
 
 impl TryFrom<u8> for Controller {
@@ -35,12 +46,5 @@ impl From<Controller> for u8 {
             Controller::Classic => 2,
             Controller::Gamecube => 3,
         }
-    }
-}
-
-impl TryFrom<&mut bitreader::BitReader<'_>> for Controller {
-    type Error = ControllerError;
-    fn try_from(value: &mut bitreader::BitReader) -> Result<Self, Self::Error> {
-        value.read_u8(4)?.try_into()
     }
 }
