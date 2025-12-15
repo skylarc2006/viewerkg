@@ -1,5 +1,7 @@
 // https://wiki.tockdom.com/wiki/Slot
 
+use crate::byte_handler::{ByteHandler, FromByteHandler};
+
 #[derive(thiserror::Error, Debug)]
 pub enum SlotIdError {
     #[error("Non Existent Slot ID")]
@@ -171,9 +173,9 @@ impl TryFrom<u8> for SlotId {
     }
 }
 
-impl TryFrom<&mut bitreader::BitReader<'_>> for SlotId {
-    type Error = SlotIdError;
-    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
-        SlotId::try_from(value.read_u8(6)?)
+impl FromByteHandler for SlotId {
+    type Err= SlotIdError;
+    fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
+        (handler.try_into().map_err(|_|()).expect("TODO: Handle this!").copy_bytes()[3] >> 2).try_into()
     }
 }
