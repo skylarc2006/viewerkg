@@ -4,8 +4,8 @@ use crate::{byte_handler::ByteHandler};
 
 #[derive(thiserror::Error, Debug)]
 pub enum MiiError {
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
+    #[error("FromUtf16Error: {0}")]
+    FromUtf16Error(#[from] std::string::FromUtf16Error),
     #[error("Invalid data length")]
     InvalidLength
 }
@@ -73,27 +73,29 @@ impl Mii {
         let month = (mii_data[0] >> 2) & 0x0F;
         let month = match month == 0 {
             true => None,
-            false => Some(month-1)
+            false => Some(month)
         };
 
-        let mut day = ByteHandler::try_from(&mii_data[0..=1]).unwrap();
-        day.shift_right(5);
-        let day = day.copy_bytes()[3] & 0x1F;
+        let day = ByteHandler::try_from(&mii_data[0..=1]).unwrap();
+        let day = (day.copy_byte(3) >> 5) & 0x1F;
         let day = match day == 0 {
             true => None,
-            false => Some(day-1)
+            false => Some(day)
         };
 
         let favorite_color = (mii_data[1] >> 1) & 0x0F;
         let is_favorite = !mii_data[1].is_multiple_of(2);
 
-        let name = String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x02..=0x15])  }).unwrap();
+        // TODO: somehow make this work (sadly it doesn't)
+        // let name = String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x02..=0x15])  }).unwrap();
 
-        let height = mii_data[0x16] & 0x3F;
-        let weight  = mii_data[0x17] & 0x3F;
+        let name = utf16be_to_string(&mii_data[0x02..=0x15])?;
+        
+        let height = mii_data[0x16] & 0x7F;
+        let weight = mii_data[0x17] & 0x7F;
 
-        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B]).unwrap().copy_dword();
-        let system_id  = ByteHandler::try_from(&mii_data[0x1C..=0x1F]).unwrap().copy_dword();
+        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B]).unwrap().copy_dword().to_be();
+        let system_id  = ByteHandler::try_from(&mii_data[0x1C..=0x1F]).unwrap().copy_dword().to_be();
         let face_shape = mii_data[0x20] >> 5;
         let skin_color = (mii_data[0x20] >> 2) & 0x03;
         let mut facial_feature = ByteHandler::try_from(&mii_data[0x20..=0x21]).unwrap();
@@ -101,14 +103,13 @@ impl Mii {
         let facial_feature = facial_feature.copy_byte(3);
 
         let bools = ByteHandler::from(mii_data[0x21]);
-        let mingle_off = bools.read_bool(3);
-        let downloaded = bools.read_bool(1);
+        let mingle_off = bools.read_bool(2);
+        let downloaded = bools.read_bool(0);
 
         let mut hair_data = ByteHandler::try_from(&mii_data[0x22..=0x23]).unwrap();
-        hair_data.shift_right(1);
-        let hair_type = hair_data.copy_byte(2);
+        let hair_type = hair_data.copy_byte(2) >> 1;
         let hair_part_reversed = hair_data.read_bool(4);
-        let hair_color = hair_data.copy_byte(3) >> 5;
+        let hair_color = hair_data.copy_byte(3) >> 6;
 
         let mut eyebrow_data = ByteHandler::try_from(&mii_data[0x24..=0x27]).unwrap();
         let eyebrow_horizontal_spacing = eyebrow_data.copy_byte(3) & 0x0F;
@@ -429,12 +430,12 @@ impl Mii {
     }
 }
 
-fn get_name(name_chars: &[u16; 10]) -> String {
-    let mut name = String::new();
-    for c in name_chars {
-        if *c != '\0' as u16 {
-            name.push(std::char::from_u32(*c as u32).unwrap());
-        }
-    }
-    name
+fn utf16be_to_string(bytes: &[u8]) -> Result<String, std::string::FromUtf16Error> {
+    let utf16: Vec<u16> = bytes
+        .chunks_exact(2)
+        .map(|c| u16::from_be_bytes([c[0], c[1]]))
+        .take_while(|&u| u != 0)
+        .collect();
+
+    String::from_utf16(&utf16)
 }

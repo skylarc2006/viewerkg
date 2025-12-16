@@ -59,6 +59,7 @@ impl Display for InGameTime {
 
 impl FromByteHandler for InGameTime {
     type Err = InGameTimeError;
+    /// Expects Header 0x04..0x07
     fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
         // TODO: Handle 3 digit second values (which are actually valid and read by the game)
 
@@ -77,8 +78,8 @@ impl FromByteHandler for InGameTime {
 
 
         Ok(Self {
-            minutes: handler.copy_byte(0) >> 1,
-            seconds: handler.copy_byte(1) >> 2,
+            minutes: handler.copy_byte(1) >> 1,
+            seconds: handler.copy_byte(2) >> 2,
             milliseconds: handler.copy_word(1) & 0x3FF
         })
     }

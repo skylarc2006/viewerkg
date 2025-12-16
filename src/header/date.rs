@@ -52,21 +52,16 @@ impl Date {
 
 impl FromByteHandler for Date {
     type Err = DateError;
+    /// Expects Header 0x09..=0x0B
     fn from_byte_handler<T: TryInto<crate::byte_handler::ByteHandler>>(
         handler: T,
     ) -> Result<Self, Self::Err> {
-        let mut handler = handler.try_into().map_err(|_|()).expect("TODO: handle this");
-
-        handler.shift_right(1);
-        let day_num = handler.copy_bytes()[2] & 0x0F;
-
-        handler.shift_right(3);
-
-        Self::new(
-            (handler.copy_words()[1] >> 9) + 2000,
-            day_num,
-            handler.copy_bytes()[3] & 0x1F,
-        )
+        let handler = handler.try_into().map_err(|_|()).expect("TODO: handle this");
+        
+        let year = ((handler.copy_byte(1) >> 1) & 0x7F) as u16 + 2000;
+        let month = (handler.copy_byte(2) >> 1) & 0x0F;
+        let day = (handler.copy_byte(2) << 4) & 0x10 | (handler.copy_byte(3) >> 4) & 0x0F;
+        Self::new(year, month, day)
     }
 }
 

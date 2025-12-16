@@ -46,13 +46,14 @@ impl FromByteHandler for Combo {
         let mut handler = handler.try_into().map_err(|_|()).expect("TODO: Handle this!");
 
         handler.shift_right(2);
-        let vehicle = handler.copy_bytes()[3];
+        let vehicle = handler.copy_byte(1);
         handler.shift_right(2);
-
+        let character = handler.copy_byte(3) & 0x3F;
+        
         Self::new(
             Vehicle::try_from(vehicle)
                .map_err(|_| ComboError::InvalidVehicleId)?,
-            Character::try_from(handler.copy_bytes()[4] & 0x3F)
+            Character::try_from(character)
                 .map_err(|_| ComboError::InvalidCharacterId)?,
         )
     }

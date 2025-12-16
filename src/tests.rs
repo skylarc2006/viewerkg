@@ -1,5 +1,5 @@
 use crate::{
-    byte_handler::ByteHandler, ctgp_metadata::CTGPMetadata, header::{
+    ctgp_metadata::CTGPMetadata, header::{
         Header,
         combo::{Character, Vehicle},
         controller::Controller,
@@ -8,11 +8,11 @@ use crate::{
         slot_id::SlotId,
     }, input_data::InputData
 };
-use std::{io::Read, str::Bytes};
+use std::io::Read;
 
 #[test]
 fn test_rkg_header() {
-    let header = Header::new_from_path("./test_ghosts/JC_LC.rkg").expect("Couldn't read header");
+    let header = Header::new_from_path("./test_ghosts/JC_LC_Compressed.rkg").expect("Couldn't read header");
 
     // General ghost info
     assert_eq!(header.finish_time().minutes(), 1);
@@ -24,7 +24,7 @@ fn test_rkg_header() {
     assert_eq!(header.combo().character(), Character::KingBoo);
     assert_eq!(header.date_set(), &Date::new(2025, 11, 12).unwrap());
     assert_eq!(header.controller(), Controller::Classic);
-    assert!(!header.is_compressed());
+    assert!(header.is_compressed());
     assert_eq!(header.ghost_type(), GhostType::ExpertStaff);
     assert!(header.is_automatic_drift());
     assert_eq!(header.decompressed_input_data_length(), 1856);
@@ -38,8 +38,8 @@ fn test_rkg_header() {
 
     // Mii Data
     assert!(!header.mii_data().is_girl());
-    assert_eq!(header.mii_data().month(), 1);
-    assert_eq!(header.mii_data().day(), 1);
+    assert_eq!(header.mii_data().month(), Some(1));
+    assert_eq!(header.mii_data().day(), Some(1));
     assert_eq!(header.mii_data().favorite_color(), 4);
     assert_eq!(header.mii_data().name(), "JC");
     assert_eq!(header.mii_data().height(), 127);

@@ -12,12 +12,12 @@ impl ByteHandler {
     }
 
     pub fn copy_words(self) -> [u16; 2] {
-        unsafe { self.words }
+        unsafe { [self.words[0].to_be(), self.words[1].to_be()] }
     }
 
     pub fn copy_word(self, idx: usize) -> u16 {
         if idx > 1 {return 0}
-        unsafe { self.words[idx] }
+        unsafe { self.words[idx].to_be() }
     }
 
     pub fn copy_bytes(self) -> [u8; 4] {
@@ -30,11 +30,11 @@ impl ByteHandler {
     }
 
     pub fn shift_right(&mut self, d: u8) {
-        unsafe { self.dword >>= d };
+        unsafe { self.dword = (self.dword.to_be() >> d).to_le() };
     }
 
     pub fn shift_left(&mut self, d: u8) {
-        unsafe { self.dword <<= d };
+        unsafe { self.dword = (self.dword.to_be() << d).to_le(); };
     }
 
     /// Reads the nth bit from the right counting from 0
@@ -42,7 +42,8 @@ impl ByteHandler {
         if d >= 32 {
             return false;
         }
-        (self.copy_dword() & 2u32.pow(d as u32)) > 0
+        let dword_be = unsafe { self.dword.to_be() };
+        (dword_be & (1u32 << d)) > 0
     }
 }
 
@@ -108,6 +109,9 @@ impl TryFrom<&[u8]> for ByteHandler {
             3 => Ok(From::from(unsafe {
                 TryInto::<[u8; 3]>::try_into(value).unwrap_unchecked()
             })),
+            4 => Ok(From::from(unsafe {
+                TryInto::<[u8; 4]>::try_into(value).unwrap_unchecked()
+            })),
             _ => Err(()),
         }
     }
@@ -129,7 +133,7 @@ impl TryFrom<&[u16]> for ByteHandler {
     }
 }
 
-pub trait FromByteHandler: Sized {
+pub(crate) trait FromByteHandler: Sized {
     type Err;
     fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err>;
 }

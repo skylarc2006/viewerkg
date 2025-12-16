@@ -18,6 +18,7 @@ pub enum Controller {
 
 impl FromByteHandler for Controller {
     type Err = ControllerError;
+    /// Expects Header 0x0B
     fn from_byte_handler<T: TryInto<crate::byte_handler::ByteHandler>>(
         handler: T,
     ) -> Result<Self, Self::Err> {
