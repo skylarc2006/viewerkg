@@ -155,21 +155,41 @@ impl Header {
     pub fn finish_time(&self) -> &InGameTime {
         &self.finish_time
     }
+    
+    pub fn set_finish_time(&mut self, finish_time: InGameTime) {
+        self.finish_time = finish_time;
+    }
 
     pub fn slot_id(&self) -> SlotId {
         self.slot_id
     }
+    
+    pub fn set_slot_id(&mut self, slot_id: SlotId) {
+        self.slot_id = slot_id;
+    }
 
     pub fn combo(&self) -> &Combo {
         &self.combo
+    }
+    
+    pub fn set_combo(&mut self, combo: Combo) {
+        self.combo = combo;
     }
 
     pub fn date_set(&self) -> &Date {
         &self.date_set
     }
 
+    pub fn set_date_set(&mut self, date_set: Date) {
+        self.date_set = date_set;
+    }
+    
     pub fn controller(&self) -> Controller {
         self.controller
+    }
+    
+    pub fn set_controller(&mut self, controller: Controller) {
+        self.controller = controller;
     }
 
     pub fn is_compressed(&self) -> bool {
@@ -178,6 +198,10 @@ impl Header {
 
     pub fn ghost_type(&self) -> GhostType {
         self.ghost_type
+    }
+    
+    pub fn set_ghost_type(&mut self, ghost_type: GhostType) {
+        self.ghost_type = ghost_type;
     }
 
     pub fn is_automatic_drift(&self) -> bool {
@@ -194,6 +218,10 @@ impl Header {
 
     pub fn lap_split_times(&self) -> &[InGameTime] {
         &self.lap_split_times
+    }
+    
+    pub fn set_lap_split_times(&mut self, lap_split_times: [InGameTime; 8]) {
+        self.lap_split_times = lap_split_times;
     }
 
     pub fn country_code(&self) -> u8 {
