@@ -1,13 +1,13 @@
 // http://wiibrew.org/wiki/Mii_Data#Mii_format
 
-use crate::{byte_handler::ByteHandler};
+use crate::byte_handler::ByteHandler;
 
 #[derive(thiserror::Error, Debug)]
 pub enum MiiError {
     #[error("FromUtf16Error: {0}")]
     FromUtf16Error(#[from] std::string::FromUtf16Error),
     #[error("Invalid data length")]
-    InvalidLength
+    InvalidLength,
 }
 
 pub struct Mii {
@@ -66,21 +66,21 @@ pub struct Mii {
 
 impl Mii {
     pub fn new(mii_data: impl TryInto<[u8; 0x4A]>) -> Result<Self, MiiError> {
-        let mii_data = mii_data.try_into().map_err(|_|MiiError::InvalidLength)?;
+        let mii_data = mii_data.try_into().map_err(|_| MiiError::InvalidLength)?;
 
         let is_girl = ByteHandler::from(mii_data[0]).read_bool(6);
 
         let month = (mii_data[0] >> 2) & 0x0F;
         let month = match month == 0 {
             true => None,
-            false => Some(month)
+            false => Some(month),
         };
 
         let day = ByteHandler::try_from(&mii_data[0..=1]).unwrap();
         let day = (day.copy_byte(3) >> 5) & 0x1F;
         let day = match day == 0 {
             true => None,
-            false => Some(day)
+            false => Some(day),
         };
 
         let favorite_color = (mii_data[1] >> 1) & 0x0F;
@@ -90,12 +90,18 @@ impl Mii {
         // let name = String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x02..=0x15])  }).unwrap();
 
         let name = utf16be_to_string(&mii_data[0x02..=0x15])?;
-        
+
         let height = mii_data[0x16] & 0x7F;
         let weight = mii_data[0x17] & 0x7F;
 
-        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B]).unwrap().copy_dword().to_be();
-        let system_id  = ByteHandler::try_from(&mii_data[0x1C..=0x1F]).unwrap().copy_dword().to_be();
+        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B])
+            .unwrap()
+            .copy_dword()
+            .to_be();
+        let system_id = ByteHandler::try_from(&mii_data[0x1C..=0x1F])
+            .unwrap()
+            .copy_dword()
+            .to_be();
         let face_shape = mii_data[0x20] >> 5;
         let skin_color = (mii_data[0x20] >> 2) & 0x03;
         let mut facial_feature = ByteHandler::try_from(&mii_data[0x20..=0x21]).unwrap();
@@ -119,8 +125,8 @@ impl Mii {
         eyebrow_data.shift_right(1);
         let eyebrow_vertical_pos = eyebrow_data.copy_byte(3) & 0x1F;
         eyebrow_data.shift_right(5);
-       let eyebrow_size  = eyebrow_data.copy_byte(3) & 0x0F;
-        let eyebrow_color = (eyebrow_data.copy_byte(3)>> 4) & 0x03;
+        let eyebrow_size = eyebrow_data.copy_byte(3) & 0x0F;
+        let eyebrow_color = (eyebrow_data.copy_byte(3) >> 4) & 0x03;
 
         let mut eye_data = ByteHandler::try_from(&mii_data[0x28..=0x2B]).unwrap();
         let eye_vertical_pos = eye_data.copy_byte(1) & 0x1F;
@@ -145,7 +151,8 @@ impl Mii {
         nose_and_lips_data.shift_right(2);
         let lip_size = nose_and_lips_data.copy_byte(3) & 0x0F;
 
-        let mut glasses_and_facial_hair_data = ByteHandler::try_from(&mii_data[0x30..=0x33]).unwrap();
+        let mut glasses_and_facial_hair_data =
+            ByteHandler::try_from(&mii_data[0x30..=0x33]).unwrap();
         let glasses_vertical_pos = glasses_and_facial_hair_data.copy_byte(1) & 0x1F;
         let mustache_vertical_pos = glasses_and_facial_hair_data.copy_byte(3) & 0x1F;
         glasses_and_facial_hair_data.shift_right(1);
@@ -167,7 +174,8 @@ impl Mii {
         let mole_size = mole_data.copy_byte(2) & 0x04;
         let mole_vertical_pos = mole_data.copy_byte(3) >> 3;
 
-        let creator_name = String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x36..=0x49])  }).unwrap();
+        let creator_name =
+            String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x36..=0x49]) }).unwrap();
 
         Ok(Self {
             is_girl,
@@ -222,7 +230,6 @@ impl Mii {
             mole_horizontal_pos,
             creator_name,
         })
-
     }
 
     pub fn is_girl(&self) -> bool {

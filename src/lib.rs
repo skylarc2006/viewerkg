@@ -1,9 +1,9 @@
 use std::io::Read;
 
+pub mod byte_handler;
 pub mod ctgp_metadata;
 pub mod header;
 pub mod input_data;
-pub mod byte_handler;
 
 /*
  * TODO:

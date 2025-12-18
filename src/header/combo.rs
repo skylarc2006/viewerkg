@@ -43,18 +43,19 @@ impl FromByteHandler for Combo {
     type Err = ComboError;
     /// Expects Header 0x08..0x0A
     fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
-        let mut handler = handler.try_into().map_err(|_|()).expect("TODO: Handle this!");
+        let mut handler = handler
+            .try_into()
+            .map_err(|_| ())
+            .expect("TODO: Handle this!");
 
         handler.shift_right(2);
-        let vehicle = handler.copy_byte(1);
+        let vehicle = handler.copy_byte(2);
         handler.shift_right(2);
         let character = handler.copy_byte(3) & 0x3F;
-        
+
         Self::new(
-            Vehicle::try_from(vehicle)
-               .map_err(|_| ComboError::InvalidVehicleId)?,
-            Character::try_from(character)
-                .map_err(|_| ComboError::InvalidCharacterId)?,
+            Vehicle::try_from(vehicle).map_err(|_| ComboError::InvalidVehicleId)?,
+            Character::try_from(character).map_err(|_| ComboError::InvalidCharacterId)?,
         )
     }
 }
@@ -155,7 +156,8 @@ impl Character {
             | Self::KingBoo
             | Self::BowserJr
             | Self::DryBowser
-            | Self::FunkyKong | Self::Rosalina
+            | Self::FunkyKong
+            | Self::Rosalina
             | Self::SmallMiiOutfitAMale
             | Self::SmallMiiOutfitAFemale
             | Self::SmallMiiOutfitBMale
@@ -173,9 +175,11 @@ impl Character {
             | Self::LargeMiiOutfitBMale
             | Self::LargeMiiOutfitBFemale
             | Self::LargeMiiOutfitCMale
-            | Self::LargeMiiOutfitCFemale
-             => false,
-            Self::MenuPeach | Self::MenuDaisy | Self::MenuRosalina| Self::MediumMii
+            | Self::LargeMiiOutfitCFemale => false,
+            Self::MenuPeach
+            | Self::MenuDaisy
+            | Self::MenuRosalina
+            | Self::MediumMii
             | Self::SmallMii
             | Self::LargeMii => true,
         }

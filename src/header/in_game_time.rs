@@ -59,11 +59,13 @@ impl Display for InGameTime {
 
 impl FromByteHandler for InGameTime {
     type Err = InGameTimeError;
-    /// Expects Header 0x04..0x07
     fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
         // TODO: Handle 3 digit second values (which are actually valid and read by the game)
 
-        let handler = handler.try_into().map_err(|_|()).expect("TODO: handle this");
+        let handler = handler
+            .try_into()
+            .map_err(|_| ())
+            .expect("TODO: handle this");
         // 3 Bytes, where M = Minutes, S = Seconds and C = Millis.
         // 1. 0bMMMMMMMS
         // 2. 0bSSSSSSCC
@@ -75,12 +77,11 @@ impl FromByteHandler for InGameTime {
         // 1. 0b00001010
         // 2. 0b11101111
         // 3. 0b11100111
-
-
+        
         Ok(Self {
             minutes: handler.copy_byte(1) >> 1,
-            seconds: handler.copy_byte(2) >> 2,
-            milliseconds: handler.copy_word(1) & 0x3FF
+            seconds: handler.copy_byte(2) >> 2 & 0x7F,
+            milliseconds: handler.copy_word(1) & 0x3FF,
         })
     }
 }

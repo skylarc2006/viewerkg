@@ -1,18 +1,21 @@
 use crate::{
-    ctgp_metadata::CTGPMetadata, header::{
+    ctgp_metadata::CTGPMetadata,
+    header::{
         Header,
         combo::{Character, Vehicle},
         controller::Controller,
         date::Date,
         ghost_type::GhostType,
         slot_id::SlotId,
-    }, input_data::InputData
+    },
+    input_data::InputData,
 };
 use std::io::Read;
 
 #[test]
 fn test_rkg_header() {
-    let header = Header::new_from_path("./test_ghosts/JC_LC_Compressed.rkg").expect("Couldn't read header");
+    let header =
+        Header::new_from_path("./test_ghosts/JC_LC_Compressed.rkg").expect("Couldn't read header");
 
     // General ghost info
     assert_eq!(header.finish_time().minutes(), 1);
@@ -144,7 +147,7 @@ fn test_ctgp_metadata() {
     let ctgp_metadata =
         CTGPMetadata::new(&rkg_data[&rkg_data.len() - metadata_length..&rkg_data.len() - 0x04])
             .expect("Failed to read CTGP metadata");
-    
+
     assert_eq!(
         ctgp_metadata.track_sha1(),
         [

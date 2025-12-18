@@ -12,12 +12,14 @@ impl ByteHandler {
     }
 
     pub fn copy_words(self) -> [u16; 2] {
-        unsafe { [self.words[0].to_be(), self.words[1].to_be()] }
+        unsafe { self.words }
     }
 
     pub fn copy_word(self, idx: usize) -> u16 {
-        if idx > 1 {return 0}
-        unsafe { self.words[idx].to_be() }
+        if idx > 1 {
+            return 0;
+        }
+        unsafe { self.words[idx] }
     }
 
     pub fn copy_bytes(self) -> [u8; 4] {
@@ -25,16 +27,20 @@ impl ByteHandler {
     }
 
     pub fn copy_byte(self, idx: usize) -> u8 {
-        if idx > 3 {return 0}
+        if idx > 3 {
+            return 0;
+        }
         unsafe { self.bytes[idx] }
     }
 
     pub fn shift_right(&mut self, d: u8) {
-        unsafe { self.dword = (self.dword.to_be() >> d).to_le() };
+        unsafe { self.dword >>= d };
     }
 
     pub fn shift_left(&mut self, d: u8) {
-        unsafe { self.dword = (self.dword.to_be() << d).to_le(); };
+        unsafe {
+            self.dword <<= d;
+        };
     }
 
     /// Reads the nth bit from the right counting from 0

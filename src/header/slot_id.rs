@@ -174,9 +174,15 @@ impl TryFrom<u8> for SlotId {
 }
 
 impl FromByteHandler for SlotId {
-    type Err= SlotIdError;
+    type Err = SlotIdError;
     /// Expects Header 0x07
     fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
-        (handler.try_into().map_err(|_|()).expect("TODO: Handle this!").copy_bytes()[3] >> 2).try_into()
+        (handler
+            .try_into()
+            .map_err(|_| ())
+            .expect("TODO: Handle this!")
+            .copy_byte(3)
+            >> 2)
+            .try_into()
     }
 }

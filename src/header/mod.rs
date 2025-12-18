@@ -1,12 +1,15 @@
-use crate::{byte_handler::{ByteHandler, FromByteHandler}, header::{
-    combo::{Combo, ComboError},
-    controller::{Controller, ControllerError},
-    date::{Date, DateError},
-    ghost_type::{GhostType, GhostTypeError},
-    in_game_time::{InGameTime, InGameTimeError},
-    mii::{Mii, MiiError},
-    slot_id::{SlotId, SlotIdError},
-}};
+use crate::{
+    byte_handler::{ByteHandler, FromByteHandler},
+    header::{
+        combo::{Combo, ComboError},
+        controller::{Controller, ControllerError},
+        date::{Date, DateError},
+        ghost_type::{GhostType, GhostTypeError},
+        in_game_time::{InGameTime, InGameTimeError},
+        mii::{Mii, MiiError},
+        slot_id::{SlotId, SlotIdError},
+    },
+};
 
 use std::io::Read;
 
@@ -15,8 +18,8 @@ pub mod controller;
 pub mod date;
 pub mod ghost_type;
 pub mod in_game_time;
-pub mod slot_id;
 pub mod mii;
+pub mod slot_id;
 
 #[derive(thiserror::Error, Debug)]
 pub enum HeaderError {
@@ -87,16 +90,19 @@ impl Header {
         let combo = Combo::from_byte_handler(&header_data[0x08..0x0A])?;
         let date_set = Date::from_byte_handler(&header_data[0x09..=0x0B])?;
         let controller = Controller::from_byte_handler(header_data[0x0B])?;
-        let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(3);
+        let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(4);
         let ghost_type = GhostType::from_byte_handler(&header_data[0x0C..=0x0D])?;
-        let is_automatic_drift = true; ByteHandler::from(header_data[0x0D]).read_bool(0);
-        let decompressed_input_data_length = ByteHandler::try_from(&header_data[0x0E..=0x0F]).unwrap().copy_words()[1];
+        let is_automatic_drift = ByteHandler::from(header_data[0x0D]).read_bool(0);
+        let decompressed_input_data_length = ByteHandler::try_from(&header_data[0x0E..=0x0F])
+            .unwrap()
+            .copy_words()[1];
 
         let lap_count = header_data[0x10];
         let mut lap_split_times: [InGameTime; 8] = [Default::default(); 8];
         for index in 0..lap_count {
-            let start = (0x11 + index*3) as usize;
-            lap_split_times[index as usize] = InGameTime::from_byte_handler(&header_data[start..start+3])?;
+            let start = (0x11 + index * 3) as usize;
+            lap_split_times[index as usize] =
+                InGameTime::from_byte_handler(&header_data[start..start + 3])?;
         }
 
         let codes = ByteHandler::try_from(&header_data[0x34..=0x37]).unwrap();
@@ -104,10 +110,12 @@ impl Header {
         let state_code = codes.copy_bytes()[1];
         let location_code = codes.copy_words()[1];
 
-        let mii_data = Mii::new(&header_data[0x3C..0x3C+0x4A])?;
+        let mii_data = Mii::new(&header_data[0x3C..0x3C + 0x4A])?;
 
         // TODO: Use CRC for its intended purpose and error out if wrong OR report mismatch
-        let mii_crc16 = ByteHandler::try_from(&header_data[0x86..=0x87]).unwrap().copy_words()[1];
+        let mii_crc16 = ByteHandler::try_from(&header_data[0x86..=0x87])
+            .unwrap()
+            .copy_words()[1];
 
         Ok(Self {
             finish_time,

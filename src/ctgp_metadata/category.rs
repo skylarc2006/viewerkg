@@ -20,7 +20,7 @@ impl TryFrom<u8> for Category {
         /*
          * TODO: Test many different TAS ghosts and see if there are any
          * extra category values not listed here.
-         * 
+         *
          * Nearly all TAS CTGP ghosts have category value 0x13 or 0x23, but
          * in a rare instance 0x03 was seen on a No Glitch TAS ghost
          */
