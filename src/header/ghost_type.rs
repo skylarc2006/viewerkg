@@ -62,7 +62,7 @@ impl FromByteHandler for GhostType {
         handler: T,
     ) -> Result<Self, Self::Err> {
         let mut handler = handler.try_into().map_err(|_| ()).unwrap();
-        handler.shift_left(6);
-        (handler.copy_byte(1) & 0x7F).try_into()
+        handler.shift_right(2);
+        (handler.copy_byte(3)).try_into()
     }
 }

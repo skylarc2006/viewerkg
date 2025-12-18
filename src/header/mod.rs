@@ -90,9 +90,9 @@ impl Header {
         let combo = Combo::from_byte_handler(&header_data[0x08..0x0A])?;
         let date_set = Date::from_byte_handler(&header_data[0x09..=0x0B])?;
         let controller = Controller::from_byte_handler(header_data[0x0B])?;
-        let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(4);
+        let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(3);
         let ghost_type = GhostType::from_byte_handler(&header_data[0x0C..=0x0D])?;
-        let is_automatic_drift = ByteHandler::from(header_data[0x0D]).read_bool(0);
+        let is_automatic_drift = ByteHandler::from(header_data[0x0D]).read_bool(1);
         let decompressed_input_data_length = ByteHandler::try_from(&header_data[0x0E..=0x0F])
             .unwrap()
             .copy_words()[1];

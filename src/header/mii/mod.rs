@@ -94,19 +94,14 @@ impl Mii {
         let height = mii_data[0x16] & 0x7F;
         let weight = mii_data[0x17] & 0x7F;
 
-        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B])
-            .unwrap()
-            .copy_dword()
-            .to_be();
-        let system_id = ByteHandler::try_from(&mii_data[0x1C..=0x1F])
-            .unwrap()
-            .copy_dword()
-            .to_be();
+        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B]).unwrap().copy_dword();
+        let system_id = ByteHandler::try_from(&mii_data[0x1C..=0x1F]).unwrap().copy_dword();
+        
         let face_shape = mii_data[0x20] >> 5;
         let skin_color = (mii_data[0x20] >> 2) & 0x03;
         let mut facial_feature = ByteHandler::try_from(&mii_data[0x20..=0x21]).unwrap();
         facial_feature.shift_right(6);
-        let facial_feature = facial_feature.copy_byte(3);
+        let facial_feature = facial_feature.copy_byte(3) & 0x0F;
 
         let bools = ByteHandler::from(mii_data[0x21]);
         let mingle_off = bools.read_bool(2);
@@ -121,7 +116,7 @@ impl Mii {
         let eyebrow_horizontal_spacing = eyebrow_data.copy_byte(3) & 0x0F;
         eyebrow_data.shift_right(3);
         let eyebrow_type = eyebrow_data.copy_byte(0);
-        let eyebrow_rotation = eyebrow_data.copy_byte(1) >> 4;
+        let eyebrow_rotation = eyebrow_data.copy_byte(1) >> 3;
         eyebrow_data.shift_right(1);
         let eyebrow_vertical_pos = eyebrow_data.copy_byte(3) & 0x1F;
         eyebrow_data.shift_right(5);
@@ -157,7 +152,7 @@ impl Mii {
         let mustache_vertical_pos = glasses_and_facial_hair_data.copy_byte(3) & 0x1F;
         glasses_and_facial_hair_data.shift_right(1);
         let glasses_color = glasses_and_facial_hair_data.copy_byte(0) & 0x07;
-        let facial_hair_color = glasses_and_facial_hair_data.copy_byte(3) & 0x07;
+        let facial_hair_color = glasses_and_facial_hair_data.copy_byte(2) & 0x07;
         glasses_and_facial_hair_data.shift_right(3);
         let glasses_type = glasses_and_facial_hair_data.copy_byte(0);
         let beard_type = glasses_and_facial_hair_data.copy_byte(3) & 0x03;
@@ -174,8 +169,7 @@ impl Mii {
         let mole_size = mole_data.copy_byte(2) & 0x04;
         let mole_vertical_pos = mole_data.copy_byte(3) >> 3;
 
-        let creator_name =
-            String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x36..=0x49]) }).unwrap();
+        let creator_name = utf16be_to_string(&mii_data[0x36..=0x49])?;
 
         Ok(Self {
             is_girl,
