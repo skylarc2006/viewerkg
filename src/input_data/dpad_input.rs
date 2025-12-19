@@ -2,8 +2,6 @@
 pub enum DPadButtonError {
     #[error("Non Existent DPad Button")]
     NonExistentDPadButton,
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -34,8 +32,6 @@ pub enum DPadInputError {
     InvalidDpadInput,
     #[error("Invalid DPad Button: {0}")]
     InvalidButton(#[from] DPadButtonError),
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Debug)]
@@ -54,27 +50,18 @@ impl DPadInput {
     }
 }
 
-impl TryFrom<u16> for DPadInput {
+impl TryFrom<&[u8]> for DPadInput {
     type Error = DPadInputError;
 
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        let bytes = value.to_be_bytes();
-        let button = parse_dpad_button(bytes[0])?;
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let button = parse_dpad_button(value[0])?;
         // 0x0F bit mask used if this input state was held longer than 255 frames, gives amount of 256-frame intervals to add to frame duration
-        let previous_full_byte_presses: u32 = (bytes[0] & 0x0F).into();
-        let frame_duration = bytes[1] as u32 + (previous_full_byte_presses * 256);
+        let previous_full_byte_presses: u32 = (value[0] & 0x0F).into();
+        let frame_duration = value[1] as u32 + (previous_full_byte_presses * 256);
 
         Ok(Self {
             button,
             frame_duration,
         })
-    }
-}
-
-impl TryFrom<&mut bitreader::BitReader<'_>> for DPadInput {
-    type Error = DPadInputError;
-
-    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
-        DPadInput::try_from(value.read_u16(16)?)
     }
 }

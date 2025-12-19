@@ -2,15 +2,13 @@
 pub enum StickInputError {
     #[error("Invalid Stick Input")]
     InvalidStickInput,
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Debug)]
 pub struct StickInput {
     x: i8,
     y: i8,
-    frame_duration: u8,
+    frame_duration: u32,
 }
 
 impl StickInput {
@@ -22,11 +20,11 @@ impl StickInput {
         self.y
     }
 
-    pub fn frame_duration(&self) -> u8 {
+    pub fn frame_duration(&self) -> u32 {
         self.frame_duration
     }
 
-    pub fn set_frame_duration(&mut self, frame_duration: u8) {
+    pub fn set_frame_duration(&mut self, frame_duration: u32) {
         self.frame_duration = frame_duration;
     }
 }
@@ -37,14 +35,13 @@ impl PartialEq for StickInput {
     }
 }
 
-impl TryFrom<u16> for StickInput {
+impl TryFrom<&[u8]> for StickInput {
     type Error = StickInputError;
 
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        let bytes = value.to_be_bytes();
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 
-        let x = (bytes[0] & 0xF0) >> 4;
-        let y = bytes[0] & 0x0F;
+        let x = (value[0] & 0xF0) >> 4;
+        let y = value[0] & 0x0F;
 
         if x > 14 || y > 14 {
             return Err(StickInputError::InvalidStickInput);
@@ -54,20 +51,12 @@ impl TryFrom<u16> for StickInput {
         let x = x as i8 - 7;
         let y = y as i8 - 7;
 
-        let frame_duration = bytes[1];
+        let frame_duration = value[1] as u32;
 
         Ok(Self {
             x,
             y,
             frame_duration,
         })
-    }
-}
-
-impl TryFrom<&mut bitreader::BitReader<'_>> for StickInput {
-    type Error = StickInputError;
-
-    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
-        StickInput::try_from(value.read_u16(16)?)
     }
 }

@@ -128,6 +128,10 @@ fn test_rkg_input_data() {
     assert_eq!(input_data.face_input_count(), 0x18);
     assert_eq!(input_data.stick_input_count(), 0x037B);
     assert_eq!(input_data.dpad_input_count(), 0x09);
+    assert_eq!(input_data.inputs().len(), 907);
+    assert_eq!(input_data.face_inputs().len(), 12);
+    assert_eq!(input_data.stick_inputs().len(), 891);
+    assert_eq!(input_data.dpad_inputs().len(), 9);
 }
 
 #[test]

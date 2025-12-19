@@ -9,10 +9,9 @@ pub mod input_data;
  * TODO:
  * Unfinished/unimplemented functionality
  * ----------------------------------------------
- * Country ID enum
- * State ID enum
+ * Subregion ID enum/Location struct
  * Read CTGP pause times
- * Handle older CTGP footer versions
+ * Document and handle older CTGP footer versions
  * Be able to modify variables in ghost files
  * Implement TryFrom<_> for T where T: Into<ByteHandler>, relies on https://github.com/rust-lang/rust/issues/31844 currently
  */

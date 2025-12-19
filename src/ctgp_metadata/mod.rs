@@ -265,3 +265,8 @@ fn duration_from_ticks(tick_count: u64) -> TimeDelta {
 
     Duration::milliseconds(total_milliseconds)
 }
+
+/// Used with a face button byte
+fn contains_ctgp_pause(buttons: u8) -> bool {
+    buttons & 0x40 != 0
+}

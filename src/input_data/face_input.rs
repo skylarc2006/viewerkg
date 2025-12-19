@@ -2,8 +2,6 @@
 pub enum FaceButtonError {
     #[error("Non Existent Face Button")]
     NonExistentFaceButton,
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -16,7 +14,7 @@ pub enum FaceButton {
 
 pub fn parse_face_buttons(value: u8) -> Result<Vec<FaceButton>, FaceButtonError> {
     let mut buttons = Vec::new();
-
+    
     if value & 0x01 != 0 {
         buttons.push(FaceButton::Accelerator);
     }
@@ -43,8 +41,6 @@ pub enum FaceInputError {
     InvalidFaceInput,
     #[error("Invalid Face Button: {0}")]
     InvalidButton(#[from] FaceButtonError),
-    #[error("BitReader Error: {0}")]
-    BitReaderError(#[from] bitreader::BitReaderError),
 }
 
 #[derive(Debug)]
@@ -73,25 +69,16 @@ impl PartialEq for FaceInput {
     }
 }
 
-impl TryFrom<u16> for FaceInput {
+impl TryFrom<&[u8]> for FaceInput {
     type Error = FaceInputError;
 
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        let bytes = value.to_be_bytes();
-        let buttons = parse_face_buttons(bytes[0])?;
-        let frame_duration = bytes[1] as u32;
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let buttons = parse_face_buttons(value[0])?;
+        let frame_duration = value[1] as u32;
 
         Ok(Self {
             buttons,
             frame_duration,
         })
-    }
-}
-
-impl TryFrom<&mut bitreader::BitReader<'_>> for FaceInput {
-    type Error = FaceInputError;
-
-    fn try_from(value: &mut bitreader::BitReader<'_>) -> Result<Self, Self::Error> {
-        FaceInput::try_from(value.read_u16(16)?)
     }
 }
