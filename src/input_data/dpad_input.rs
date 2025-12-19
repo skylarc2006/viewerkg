@@ -50,6 +50,11 @@ impl DPadInput {
     }
 }
 
+impl PartialEq for DPadInput {
+    fn eq(&self, other: &DPadInput) -> bool {
+        self.button == other.button
+    }
+}
 impl TryFrom<&[u8]> for DPadInput {
     type Error = DPadInputError;
 

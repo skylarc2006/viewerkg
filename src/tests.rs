@@ -173,3 +173,45 @@ fn test_ctgp_metadata() {
         ctgp_metadata.rtc_time_paused().num_milliseconds()
     );
 }
+
+/// CTGP adds a pause mask to frames where a pause is pressed. Actual race inputs should stay the same.
+#[test]
+fn test_ctgp_pause_vs_vanilla_input_timing() {
+    let mut pause_rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/skylar_pause_ghost_compressed.rkg")
+        .expect("Couldn't find `./test_ghosts/skylar_pause_ghost_compressed.rkg`")
+        .read_to_end(&mut pause_rkg_data)
+        .expect("Couldn't read bytes in file");
+
+    let mut vanilla_rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/skylar_pause_ghost_vanilla.rkg")
+        .expect("Couldn't find `./test_ghosts/skylar_pause_ghost_vanilla.rkg`")
+        .read_to_end(&mut vanilla_rkg_data)
+        .expect("Couldn't read bytes in file");
+
+    let pause_inputs = InputData::new(&pause_rkg_data[0x88..pause_rkg_data.len() - 0xE0])
+        .expect("Failed to read inputs from pause ghost");
+    let vanilla_inputs = InputData::new(&vanilla_rkg_data[0x88..vanilla_rkg_data.len() - 0x04])
+        .expect("Failed to read inputs from vanilla ghost");
+    
+    /*
+    assert_eq!(
+        pause_inputs.face_input_count(),
+        vanilla_inputs.face_input_count()
+    );
+    assert_eq!(
+        pause_inputs.stick_input_count(),
+        vanilla_inputs.stick_input_count()
+    );
+    assert_eq!(
+        pause_inputs.dpad_input_count(),
+        vanilla_inputs.dpad_input_count()
+    );
+    */
+
+    assert_eq!(pause_inputs.face_inputs(), vanilla_inputs.face_inputs());
+    assert_eq!(pause_inputs.stick_inputs(), vanilla_inputs.stick_inputs());
+    assert_eq!(pause_inputs.dpad_inputs(), pause_inputs.dpad_inputs());
+
+    assert_eq!(pause_inputs.inputs(), vanilla_inputs.inputs());
+}

@@ -24,11 +24,12 @@ pub fn parse_face_buttons(value: u8) -> Result<Vec<FaceButton>, FaceButtonError>
     if value & 0x04 != 0 {
         buttons.push(FaceButton::Item);
     }
-    if value & 0xF0 != 0 {
+    // 0x40 is the CTGP pause mask and would trigger this otherwise
+    if value & 0xF0 != 0 && value & 0x40 == 0 {
         buttons.push(FaceButton::Unknown);
     }
 
-    if value != 0x00 && buttons.is_empty() {
+    if value != 0x00 && value & 0x40 == 0 && buttons.is_empty() {
         return Err(FaceButtonError::NonExistentFaceButton);
     }
 
