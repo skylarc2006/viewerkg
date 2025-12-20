@@ -2,6 +2,8 @@
 pub enum FaceButtonError {
     #[error("Non Existent Face Button")]
     NonExistentFaceButton,
+    #[error("Illegal Drift Input")]
+    IllegalDriftInput,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -34,6 +36,11 @@ pub fn parse_face_buttons(value: u8) -> Result<Vec<FaceButton>, FaceButtonError>
     // 0x40 is the CTGP pause mask and would trigger this otherwise
     if value & 0xF0 != 0 && value & 0x40 == 0 {
         buttons.push(FaceButton::Unknown);
+    }
+    
+    if value & 0x08 != 0 && value & 0x02 == 0 {
+        // If drift "button" (flag) is pressed but brake button is not (illegal input)
+        return Err(FaceButtonError::IllegalDriftInput);
     }
 
     if value != 0x00 && value & 0x40 == 0 && buttons.is_empty() {
