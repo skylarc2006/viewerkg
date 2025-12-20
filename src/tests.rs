@@ -193,7 +193,7 @@ fn test_ctgp_pause_vs_vanilla_input_timing() {
         .expect("Failed to read inputs from pause ghost");
     let vanilla_inputs = InputData::new(&vanilla_rkg_data[0x88..vanilla_rkg_data.len() - 0x04])
         .expect("Failed to read inputs from vanilla ghost");
-    
+
     /*
     assert_eq!(
         pause_inputs.face_input_count(),
@@ -214,4 +214,20 @@ fn test_ctgp_pause_vs_vanilla_input_timing() {
     assert_eq!(pause_inputs.dpad_inputs(), pause_inputs.dpad_inputs());
 
     assert_eq!(pause_inputs.inputs(), vanilla_inputs.inputs());
+}
+
+#[test]
+fn print_inputs_test() {
+    let mut rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/drift_button_test.rkg")
+        .expect("Couldn't find `./test_ghosts/drift_button_test.rkg`")
+        .read_to_end(&mut rkg_data)
+        .expect("Couldn't read bytes in file");
+
+    println!(
+        "{:#?}",
+        InputData::new(&rkg_data[0x88..rkg_data.len() - 0x04])
+            .expect("Failed to read input data")
+            .inputs()
+    );
 }
