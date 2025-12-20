@@ -62,7 +62,7 @@ pub struct Header {
     is_automatic_drift: bool,
     decompressed_input_data_length: u16,
     lap_count: u8,
-    lap_split_times: [InGameTime; 8],
+    lap_split_times: [InGameTime; 10],
     country: Country,
     subregion: u8,
     location_code: u16,
@@ -101,7 +101,7 @@ impl Header {
             .copy_word(1);
 
         let lap_count = header_data[0x10];
-        let mut lap_split_times: [InGameTime; 8] = [Default::default(); 8];
+        let mut lap_split_times: [InGameTime; 10] = [Default::default(); 10];
         for index in 0..lap_count {
             let start = (0x11 + index * 3) as usize;
             lap_split_times[index as usize] =
@@ -219,10 +219,10 @@ impl Header {
     }
 
     pub fn lap_split_times(&self) -> &[InGameTime] {
-        &self.lap_split_times
+        &self.lap_split_times[0..self.lap_count as usize]
     }
 
-    pub fn set_lap_split_times(&mut self, lap_split_times: [InGameTime; 8]) {
+    pub fn set_lap_split_times(&mut self, lap_split_times: [InGameTime; 10]) {
         self.lap_split_times = lap_split_times;
     }
 

@@ -226,3 +226,20 @@ fn illegal_brake_input_test() {
     // This line should always fail
     let _input_data = InputData::new(&rkg_data).expect("Failed to read input data");
 }
+
+#[test]
+fn test_nine_laps() {
+    let mut rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/9laps_test.rkg")
+        .expect("Couldn't find `./test_ghosts/9laps_test.rkg`")
+        .read_to_end(&mut rkg_data)
+        .expect("Couldn't read bytes in file");
+    
+    let header = Header::new(&rkg_data[..0x88]).expect("Couldn't read header");
+    
+    for (index, lap) in header.lap_split_times().iter().enumerate() {
+        println!("Lap {}: {}", index + 1, lap.to_string());
+    }
+    
+    println!("\nTotal time: {}", header.finish_time().to_string());
+}
