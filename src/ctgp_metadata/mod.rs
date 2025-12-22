@@ -134,7 +134,7 @@ impl CTGPMetadata {
 
         for index in 0..lap_count as usize {
             let mut true_time_subtraction =
-                (f32::from_be_bytes(metadata[current_offset..current_offset + 0x04].try_into()?)
+                ((f32::from_be_bytes(metadata[current_offset..current_offset + 0x04].try_into()?) as f64)
                     * 1e+9).floor() as i64;
 
             let lap_time = InGameTime::from_byte_handler(
