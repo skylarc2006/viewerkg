@@ -4,7 +4,7 @@ use std::fmt::Display;
 pub struct ExactFinishTime {
     minutes: u8,
     seconds: u8,
-    femtoseconds: u64,
+    picoseconds: u64,
 }
 
 impl ExactFinishTime {
@@ -13,7 +13,7 @@ impl ExactFinishTime {
         Self {
             minutes,
             seconds,
-            femtoseconds,
+            picoseconds: femtoseconds,
         }
     }
 
@@ -25,8 +25,8 @@ impl ExactFinishTime {
         self.seconds
     }
 
-    pub fn femtoseconds(self) -> u64 {
-        self.femtoseconds
+    pub fn picoseconds(self) -> u64 {
+        self.picoseconds
     }
 }
 
@@ -34,8 +34,8 @@ impl Display for ExactFinishTime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:02}:{:02}.{:015}",
-            self.minutes, self.seconds, self.femtoseconds
+            "{:02}:{:02}.{:012}",
+            self.minutes, self.seconds, self.picoseconds
         )
     }
 }

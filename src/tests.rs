@@ -157,8 +157,8 @@ fn test_ctgp_metadata() {
 #[test]
 fn print_ctgp_metadata() {
     let mut rkg_data: Vec<u8> = Vec::new();
-    std::fs::File::open("./test_ghosts/9laps_test.rkg")
-        .expect("Couldn't find `./test_ghosts/9laps_test.rkg`")
+    std::fs::File::open("./test_ghosts/00m58s6479888 David .rkg")
+        .expect("Couldn't find `./test_ghosts/00m58s6479888 David .rkg`")
         .read_to_end(&mut rkg_data)
         .expect("Couldn't read bytes in file");
 
