@@ -92,7 +92,7 @@ impl CTGPMetadata {
         let finish_time = InGameTime::from_byte_handler(&header_data[0x04..0x07])?;
         let true_time_subtraction =
             (f32::from_be_bytes(metadata[current_offset..current_offset + 0x04].try_into()?)
-                * 1e+9).floor() as i64;
+               as f64 * 1e+9).floor() as i64;
         let exact_finish_time = ExactFinishTime::new(
             finish_time.minutes(),
             finish_time.seconds(),
@@ -144,6 +144,7 @@ impl CTGPMetadata {
             // subtract the sum of the previous laps' difference because the lap differences add up to
             // have its decimal portion be equal to the total time
             true_time_subtraction -= previous_subtractions;
+            
             if true_time_subtraction > 1e+9 as i64 {
                 true_time_subtraction -= subtraction_ps;
                 subtraction_ps = if subtraction_ps == 0 { 1e+9 as i64 } else { 0 };

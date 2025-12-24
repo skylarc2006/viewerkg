@@ -1,5 +1,5 @@
 use crate::{
-    ctgp_metadata::{CTGPMetadata, exact_finish_time::ExactFinishTime},
+    ctgp_metadata::CTGPMetadata,
     header::{
         Header,
         combo::{Character, Vehicle},
@@ -302,4 +302,20 @@ fn test_nine_laps() {
     }
 
     println!("\nTotal time: {}", header.finish_time().to_string());
+}
+
+#[test]
+fn test_exact_finish_time() {
+    let mut rkg_data: Vec<u8> = Vec::new();
+    std::fs::File::open("./test_ghosts/00m58s6479888 David .rkg")
+        .expect("Couldn't find `./test_ghosts/00m58s6479888 David .rkg`")
+        .read_to_end(&mut rkg_data)
+        .expect("Couldn't read bytes in file");
+    
+    let ctgp_metadata = CTGPMetadata::new(&rkg_data).expect("Failed to read CTGP metadata");
+    
+    assert_eq!(ctgp_metadata.exact_finish_time().to_string(), "00:58.647988872949");
+    assert_eq!(ctgp_metadata.exact_lap_times()[0].to_string(), "00:19.607006953895");
+    assert_eq!(ctgp_metadata.exact_lap_times()[1].to_string(), "00:19.623577742219");
+    assert_eq!(ctgp_metadata.exact_lap_times()[2].to_string(), "00:19.417404176835");
 }

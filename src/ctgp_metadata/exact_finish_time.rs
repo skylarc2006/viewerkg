@@ -9,11 +9,11 @@ pub struct ExactFinishTime {
 
 impl ExactFinishTime {
     #[inline(always)]
-    pub fn new(minutes: u8, seconds: u8, femtoseconds: u64) -> Self {
+    pub fn new(minutes: u8, seconds: u8, picoseconds: u64) -> Self {
         Self {
             minutes,
             seconds,
-            picoseconds: femtoseconds,
+            picoseconds,
         }
     }
 
