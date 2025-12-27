@@ -1,9 +1,15 @@
-use crate::byte_handler::FromByteHandler;
+use std::convert::Infallible;
+
+use crate::byte_handler::{ByteHandlerError, FromByteHandler};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ControllerError {
     #[error("Nonexistent Controller ID")]
     NonexistentControllerID,
+    #[error("ByteHandler Error: {0}")]
+    ByteHandlerError(#[from] ByteHandlerError),
+    #[error("")]
+    Infallible(#[from] Infallible),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -17,10 +23,12 @@ pub enum Controller {
 impl FromByteHandler for Controller {
     type Err = ControllerError;
     /// Expects Header 0x0B
-    fn from_byte_handler<T: TryInto<crate::byte_handler::ByteHandler>>(
-        handler: T,
-    ) -> Result<Self, Self::Err> {
-        (handler.try_into().map_err(|_| ()).unwrap().copy_byte(3) & 0x0F).try_into()
+    fn from_byte_handler<T>(handler: T) -> Result<Self, Self::Err>
+    where
+        T: TryInto<crate::byte_handler::ByteHandler>,
+        Self::Err: From<T::Error>,
+    {
+        (handler.try_into()?.copy_byte(0) & 0x0F).try_into()
     }
 }
 

@@ -1,6 +1,24 @@
 // http://wiibrew.org/wiki/Mii_Data#Mii_format
 
-use crate::byte_handler::ByteHandler;
+use crate::{
+    byte_handler::{ByteHandler, ByteHandlerError, FromByteHandler},
+    header::mii::{
+        bday::{Birthday, BirthdayError}, build::{Build, BuildError}, eyebrows::{Eyebrows, EyebrowsError}, eyes::{Eyes, EyesError}, facial_hair::{FacialHair, FacialHairError}, fav_color::{FavColor, FavColorError}, glasses::{Glasses, GlassesError}, hair::{Hair, HairError}, head::{Head, HeadError}, lips::{Lips, LipsError}, mole::{Mole, MoleError}, nose::{Nose, NoseError}
+    },
+};
+
+pub mod bday;
+pub mod build;
+pub mod eyebrows;
+pub mod eyes;
+pub mod facial_hair;
+pub mod fav_color;
+pub mod glasses;
+pub mod hair;
+pub mod head;
+pub mod lips;
+pub mod mole;
+pub mod nose;
 
 #[derive(thiserror::Error, Debug)]
 pub enum MiiError {
@@ -8,59 +26,54 @@ pub enum MiiError {
     FromUtf16Error(#[from] std::string::FromUtf16Error),
     #[error("Invalid data length")]
     InvalidLength,
+    #[error("Birthday Error: {0}")]
+    BirthdayError(#[from] BirthdayError),
+    #[error("FavColor Error: {0}")]
+    FavColorError(#[from] FavColorError),
+    #[error("Build Error: {0}")]
+    BuildError(#[from] BuildError),
+    #[error("Head Error: {0}")]
+    HeadError(#[from] HeadError),
+    #[error("Hair Error: {0}")]
+    HairError(#[from] HairError),
+    #[error("Eyebrows Error: {0}")]
+    EyebrowsError(#[from] EyebrowsError),
+    #[error("Eyes Error: {0}")]
+    EyesError(#[from] EyesError),
+    #[error("Nose Error: {0}")]
+    NoseError(#[from] NoseError),
+    #[error("Lips Error: {0}")]
+    LipsError(#[from] LipsError),
+    #[error("Glasses Error: {0}")]
+    GlassesError(#[from] GlassesError),
+    #[error("FacialHair Error: {0}")]
+    FacialHairError(#[from] FacialHairError),
+    #[error("Mole Error: {0}")]
+    MoleError(#[from] MoleError),
+    #[error("ByteHandler Error: {0}")]
+    ByteHandlerError(#[from] ByteHandlerError),
 }
 
 pub struct Mii {
     is_girl: bool,
-    month: Option<u8>,
-    day: Option<u8>,
-    favorite_color: u8,
+    birthday: Birthday,
+    favorite_color: FavColor,
     is_favorite: bool,
     name: String,
-    height: u8,
-    weight: u8,
+    build: Build,
     mii_id: u32,
     system_id: u32,
-    face_shape: u8,
-    skin_color: u8,
-    facial_feature: u8,
+    head: Head,
     mingle_off: bool,
     downloaded: bool,
-    hair_type: u8,
-    hair_color: u8,
-    hair_part_reversed: bool,
-    eyebrow_type: u8,
-    eyebrow_rotation: u8,
-    eyebrow_color: u8,
-    eyebrow_size: u8,
-    eyebrow_vertical_pos: u8,
-    eyebrow_horizontal_spacing: u8,
-    eye_type: u8,
-    eye_rotation: u8,
-    eye_vertical_pos: u8,
-    eye_color: u8,
-    eye_size: u8,
-    eye_horizontal_spacing: u8,
-    nose_type: u8,
-    nose_size: u8,
-    nose_vertical_pos: u8,
-    lip_type: u8,
-    lip_color: u8,
-    lip_size: u8,
-    lip_vertical_pos: u8,
-    glasses_type: u8,
-    glasses_color: u8,
-    glasses_size: u8,
-    glasses_vertical_pos: u8,
-    mustache_type: u8,
-    beard_type: u8,
-    facial_hair_color: u8,
-    mustache_size: u8,
-    mustache_vertical_pos: u8,
-    has_mole: bool,
-    mole_size: u8,
-    mole_vertical_pos: u8,
-    mole_horizontal_pos: u8,
+    hair: Hair,
+    eyebrows: Eyebrows,
+    eyes: Eyes,
+    nose: Nose,
+    lips: Lips,
+    glasses: Glasses,
+    facial_hair: FacialHair,
+    mole: Mole,
     creator_name: String,
 }
 
@@ -68,164 +81,55 @@ impl Mii {
     pub fn new(mii_data: impl TryInto<[u8; 0x4A]>) -> Result<Self, MiiError> {
         let mii_data = mii_data.try_into().map_err(|_| MiiError::InvalidLength)?;
 
-        let is_girl = ByteHandler::from(mii_data[0]).read_bool(6);
+        let bytes = ByteHandler::try_from(&mii_data[0..=1])?;
+        let is_girl = bytes.read_bool(6);
+        let birthday = Birthday::from_byte_handler(bytes)?;
 
-        let month = (mii_data[0] >> 2) & 0x0F;
-        let month = match month == 0 {
-            true => None,
-            false => Some(month),
-        };
-
-        let day = ByteHandler::try_from(&mii_data[0..=1]).unwrap();
-        let day = (day.copy_byte(3) >> 5) & 0x1F;
-        let day = match day == 0 {
-            true => None,
-            false => Some(day),
-        };
-
-        let favorite_color = (mii_data[1] >> 1) & 0x0F;
-        let is_favorite = !mii_data[1].is_multiple_of(2);
-
-        // TODO: somehow make this work (sadly it doesn't)
-        // let name = String::from_utf16(unsafe { std::mem::transmute(&mii_data[0x02..=0x15])  }).unwrap();
+        let favorite_color = FavColor::from_byte_handler(mii_data[1])?;
+        let is_favorite = mii_data[1].is_multiple_of(2);
 
         let name = utf16be_to_string(&mii_data[0x02..=0x15])?;
 
-        let height = mii_data[0x16] & 0x7F;
-        let weight = mii_data[0x17] & 0x7F;
+        let build = Build::from_byte_handler(&mii_data[0x16..=0x17])?;
 
-        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B])
-            .unwrap()
-            .copy_dword();
-        let system_id = ByteHandler::try_from(&mii_data[0x1C..=0x1F])
-            .unwrap()
-            .copy_dword();
+        let mii_id = ByteHandler::try_from(&mii_data[0x18..=0x1B])?.copy_dword();
+        let system_id = ByteHandler::try_from(&mii_data[0x1C..=0x1F])?.copy_dword();
 
-        let face_shape = mii_data[0x20] >> 5;
-        let skin_color = (mii_data[0x20] >> 2) & 0x03;
-        let mut facial_feature = ByteHandler::try_from(&mii_data[0x20..=0x21]).unwrap();
-        facial_feature.shift_right(6);
-        let facial_feature = facial_feature.copy_byte(3) & 0x0F;
-
-        let bools = ByteHandler::from(mii_data[0x21]);
-        let mingle_off = bools.read_bool(2);
-        let downloaded = bools.read_bool(0);
-
-        let hair_data = ByteHandler::try_from(&mii_data[0x22..=0x23]).unwrap();
-        let hair_type = hair_data.copy_byte(2) >> 1;
-        let hair_part_reversed = hair_data.read_bool(4);
-        let hair_color = hair_data.copy_byte(3) >> 6;
-
-        let mut eyebrow_data = ByteHandler::try_from(&mii_data[0x24..=0x27]).unwrap();
-        let eyebrow_horizontal_spacing = eyebrow_data.copy_byte(3) & 0x0F;
-        eyebrow_data.shift_right(3);
-        let eyebrow_type = eyebrow_data.copy_byte(0);
-        let eyebrow_rotation = eyebrow_data.copy_byte(1) >> 3;
-        eyebrow_data.shift_right(1);
-        let eyebrow_vertical_pos = eyebrow_data.copy_byte(3) & 0x1F;
-        eyebrow_data.shift_right(5);
-        let eyebrow_size = eyebrow_data.copy_byte(3) & 0x0F;
-        let eyebrow_color = (eyebrow_data.copy_byte(3) >> 4) & 0x03;
-
-        let mut eye_data = ByteHandler::try_from(&mii_data[0x28..=0x2B]).unwrap();
-        let eye_vertical_pos = eye_data.copy_byte(1) & 0x1F;
-        eye_data.shift_right(1);
-        let eye_size = eye_data.copy_byte(2) & 0x0F;
-        eye_data.shift_right(1);
-        let eye_type = eye_data.copy_byte(0);
-        eye_data.shift_right(3);
-        let eye_rotation = eye_data.copy_byte(1) & 0x1F;
-        let eye_color = eye_data.copy_byte(2) & 0x07;
-        let eye_horizontal_spacing = eye_data.copy_byte(3) & 0x0F;
-
-        let mut nose_and_lips_data = ByteHandler::try_from(&mii_data[0x2C..=0x2F]).unwrap();
-        let nose_type = nose_and_lips_data.copy_byte(0) >> 4;
-        let nose_size = nose_and_lips_data.copy_byte(0) & 0x0F;
-        let lip_vertical_pos = nose_and_lips_data.copy_byte(3) & 0x1F;
-        nose_and_lips_data.shift_right(1);
-        let lip_color = nose_and_lips_data.copy_byte(2) & 0x03;
-        nose_and_lips_data.shift_right(2);
-        let nose_vertical_pos = nose_and_lips_data.copy_byte(1) & 0x1F;
-        let lip_type = nose_and_lips_data.copy_byte(2) & 0x1F;
-        nose_and_lips_data.shift_right(2);
-        let lip_size = nose_and_lips_data.copy_byte(3) & 0x0F;
-
-        let mut glasses_and_facial_hair_data =
-            ByteHandler::try_from(&mii_data[0x30..=0x33]).unwrap();
-        let glasses_vertical_pos = glasses_and_facial_hair_data.copy_byte(1) & 0x1F;
-        let mustache_vertical_pos = glasses_and_facial_hair_data.copy_byte(3) & 0x1F;
-        glasses_and_facial_hair_data.shift_right(1);
-        let glasses_color = glasses_and_facial_hair_data.copy_byte(0) & 0x07;
-        let facial_hair_color = glasses_and_facial_hair_data.copy_byte(2) & 0x07;
-        glasses_and_facial_hair_data.shift_right(3);
-        let glasses_type = glasses_and_facial_hair_data.copy_byte(0);
-        let beard_type = glasses_and_facial_hair_data.copy_byte(3) & 0x03;
-        glasses_and_facial_hair_data.shift_right(1);
-        let glasses_size = glasses_and_facial_hair_data.copy_byte(1) & 0x0F;
-        let mustache_type = (glasses_and_facial_hair_data.copy_byte(2) >> 1) & 0x03;
-        let mustache_size = glasses_and_facial_hair_data.copy_byte(3) & 0x0F;
-
-        let mut mole_data = ByteHandler::try_from(&mii_data[0x34..=0x35]).unwrap();
-        mole_data.shift_right(1);
-        let has_mole = mole_data.read_bool(14);
-        let mole_horizontal_pos = mole_data.copy_byte(3) & 0x1F;
-        mole_data.shift_right(2);
-        let mole_size = mole_data.copy_byte(2) & 0x04;
-        let mole_vertical_pos = mole_data.copy_byte(3) >> 3;
+        let bytes = ByteHandler::try_from(&mii_data[0x20..=0x21])?;
+        let mingle_off = bytes.read_bool(2);
+        let downloaded = bytes.read_bool(0);
+        let head = Head::from_byte_handler(bytes)?;
+        let hair = Hair::from_byte_handler(&mii_data[0x22..=0x23])?;
+        let eyebrows = Eyebrows::from_byte_handler(&mii_data[0x24..=0x27])?;
+        let eyes = Eyes::from_byte_handler(&mii_data[0x28..=0x2B])?;
+        let nose = Nose::from_byte_handler(&mii_data[0x2C..=0x2D])?;
+        let lips = Lips::from_byte_handler(&mii_data[0x2E..=0x2F])?;
+        let glasses = Glasses::from_byte_handler(&mii_data[0x30..=0x31])?;
+        let facial_hair = FacialHair::from_byte_handler(&mii_data[0x32..=0x33])?;
+        let mole = Mole::from_byte_handler(&mii_data[0x34..=0x35])?;
 
         let creator_name = utf16be_to_string(&mii_data[0x36..=0x49])?;
 
         Ok(Self {
             is_girl,
-            month,
-            day,
+            birthday,
             favorite_color,
             is_favorite,
             name,
-            height,
-            weight,
+            build,
             mii_id,
             system_id,
-            face_shape,
-            skin_color,
-            facial_feature,
+            head,
             mingle_off,
             downloaded,
-            hair_type,
-            hair_color,
-            hair_part_reversed,
-            eyebrow_type,
-            eyebrow_rotation,
-            eyebrow_color,
-            eyebrow_size,
-            eyebrow_vertical_pos,
-            eyebrow_horizontal_spacing,
-            eye_type,
-            eye_rotation,
-            eye_vertical_pos,
-            eye_color,
-            eye_size,
-            eye_horizontal_spacing,
-            nose_type,
-            nose_size,
-            nose_vertical_pos,
-            lip_type,
-            lip_color,
-            lip_size,
-            lip_vertical_pos,
-            glasses_type,
-            glasses_color,
-            glasses_size,
-            glasses_vertical_pos,
-            mustache_type,
-            beard_type,
-            facial_hair_color,
-            mustache_size,
-            mustache_vertical_pos,
-            has_mole,
-            mole_size,
-            mole_vertical_pos,
-            mole_horizontal_pos,
+            hair,
+            eyebrows,
+            eyes,
+            nose,
+            lips,
+            glasses,
+            facial_hair,
+            mole,
             creator_name,
         })
     }
@@ -234,15 +138,11 @@ impl Mii {
         self.is_girl
     }
 
-    pub fn month(&self) -> Option<u8> {
-        self.month
+    pub fn birthday(&self) -> Birthday {
+        self.birthday
     }
 
-    pub fn day(&self) -> Option<u8> {
-        self.day
-    }
-
-    pub fn favorite_color(&self) -> u8 {
+    pub fn favorite_color(&self) -> FavColor {
         self.favorite_color
     }
 
@@ -254,12 +154,8 @@ impl Mii {
         &self.name
     }
 
-    pub fn height(&self) -> u8 {
-        self.height
-    }
-
-    pub fn weight(&self) -> u8 {
-        self.weight
+    pub fn build(&self) -> Build {
+        self.build
     }
 
     pub fn mii_id(&self) -> u32 {
@@ -270,16 +166,8 @@ impl Mii {
         self.system_id
     }
 
-    pub fn face_shape(&self) -> u8 {
-        self.face_shape
-    }
-
-    pub fn skin_color(&self) -> u8 {
-        self.skin_color
-    }
-
-    pub fn facial_feature(&self) -> u8 {
-        self.facial_feature
+    pub fn head(&self) -> Head {
+        self.head
     }
 
     pub fn mingle_off(&self) -> bool {
@@ -290,144 +178,36 @@ impl Mii {
         self.downloaded
     }
 
-    pub fn hair_type(&self) -> u8 {
-        self.hair_type
+    pub fn hair(&self) -> Hair {
+        self.hair
     }
 
-    pub fn hair_color(&self) -> u8 {
-        self.hair_color
+    pub fn eyebrows(&self) -> &Eyebrows {
+        &self.eyebrows
     }
 
-    pub fn hair_part_reversed(&self) -> bool {
-        self.hair_part_reversed
+    pub fn eyes(&self) -> &Eyes {
+        &self.eyes
     }
 
-    pub fn eyebrow_type(&self) -> u8 {
-        self.eyebrow_type
+    pub fn nose(&self) -> Nose {
+        self.nose
     }
 
-    pub fn eyebrow_rotation(&self) -> u8 {
-        self.eyebrow_rotation
+    pub fn lips(&self) -> Lips {
+        self.lips
     }
 
-    pub fn eyebrow_color(&self) -> u8 {
-        self.eyebrow_color
+    pub fn glasses(&self) -> Glasses {
+        self.glasses
     }
 
-    pub fn eyebrow_size(&self) -> u8 {
-        self.eyebrow_size
+    pub fn facial_hair(&self) -> &FacialHair {
+        &self.facial_hair
     }
 
-    pub fn eyebrow_vertical_pos(&self) -> u8 {
-        self.eyebrow_vertical_pos
-    }
-
-    pub fn eyebrow_horizontal_spacing(&self) -> u8 {
-        self.eyebrow_horizontal_spacing
-    }
-
-    pub fn eye_type(&self) -> u8 {
-        self.eye_type
-    }
-
-    pub fn eye_rotation(&self) -> u8 {
-        self.eye_rotation
-    }
-
-    pub fn eye_vertical_pos(&self) -> u8 {
-        self.eye_vertical_pos
-    }
-
-    pub fn eye_color(&self) -> u8 {
-        self.eye_color
-    }
-
-    pub fn eye_size(&self) -> u8 {
-        self.eye_size
-    }
-
-    pub fn eye_horizontal_spacing(&self) -> u8 {
-        self.eye_horizontal_spacing
-    }
-
-    pub fn nose_type(&self) -> u8 {
-        self.nose_type
-    }
-
-    pub fn nose_size(&self) -> u8 {
-        self.nose_size
-    }
-
-    pub fn nose_vertical_pos(&self) -> u8 {
-        self.nose_vertical_pos
-    }
-
-    pub fn lip_type(&self) -> u8 {
-        self.lip_type
-    }
-
-    pub fn lip_color(&self) -> u8 {
-        self.lip_color
-    }
-
-    pub fn lip_size(&self) -> u8 {
-        self.lip_size
-    }
-
-    pub fn lip_vertical_pos(&self) -> u8 {
-        self.lip_vertical_pos
-    }
-
-    pub fn glasses_type(&self) -> u8 {
-        self.glasses_type
-    }
-
-    pub fn glasses_color(&self) -> u8 {
-        self.glasses_color
-    }
-
-    pub fn glasses_size(&self) -> u8 {
-        self.glasses_size
-    }
-
-    pub fn glasses_vertical_pos(&self) -> u8 {
-        self.glasses_vertical_pos
-    }
-
-    pub fn mustache_type(&self) -> u8 {
-        self.mustache_type
-    }
-
-    pub fn beard_type(&self) -> u8 {
-        self.beard_type
-    }
-
-    pub fn facial_hair_color(&self) -> u8 {
-        self.facial_hair_color
-    }
-
-    pub fn mustache_size(&self) -> u8 {
-        self.mustache_size
-    }
-
-    pub fn mustache_vertical_pos(&self) -> u8 {
-        self.mustache_vertical_pos
-    }
-
-    pub fn has_mole(&self) -> bool {
-        self.has_mole
-    }
-
-    pub fn mole_size(&self) -> u8 {
-        self.mole_size
-    }
-
-    pub fn mole_vertical_pos(&self) -> u8 {
-        self.mole_vertical_pos
-    }
-
-    pub fn mole_horizontal_pos(&self) -> u8 {
-        self.mole_horizontal_pos
+    pub fn mole(&self) -> Mole {
+        self.mole
     }
 
     pub fn creator_name(&self) -> &str {
