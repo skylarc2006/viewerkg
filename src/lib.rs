@@ -9,11 +9,14 @@ pub mod input_data;
  * TODO:
  * Unfinished/unimplemented functionality
  * ----------------------------------------------
- * Subregion ID enum/Location struct
+ * Subregion ID enum/Location struct, implement properly subregions
  * Read CTGP pause times
  * Document and handle older CTGP footer versions
  * Be able to modify variables in ghost files
  * Implement TryFrom<_> for T where T: Into<ByteHandler>, relies on https://github.com/rust-lang/rust/issues/31844 currently
+ * Represent at a Type-system level which types can convert from T to TypeHandler to whichever Struct
+ * Optimize Little-Endian calculations
+ * Figure out whether Big-Endian works
  */
 
 #[cfg(test)]

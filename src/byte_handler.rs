@@ -1,3 +1,9 @@
+#[derive(thiserror::Error, Debug)]
+pub enum ByteHandlerError {
+    #[error("Couldn't convert type to ByteHandler: Too Long")]
+    ConversionErrorTooLong,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub(crate) union ByteHandler {
@@ -7,75 +13,76 @@ pub(crate) union ByteHandler {
 }
 
 impl ByteHandler {
-    pub fn copy_dword(self) -> u32 {
-        unsafe { u32::from_be_bytes(self.bytes) }
+    pub const fn copy_dword(self) -> u32 {
+        unsafe { self.dword }
     }
 
-    pub fn copy_words(self) -> [u16; 2] {
-        unsafe {
-            [
-                u16::from_be_bytes([self.bytes[0], self.bytes[1]]),
-                u16::from_be_bytes([self.bytes[2], self.bytes[3]]),
-            ]
-        }
-    }
-
-    pub fn copy_word(self, idx: usize) -> u16 {
+    pub const fn copy_word(self, idx: usize) -> u16 {
         if idx > 1 {
             return 0;
         }
-        unsafe {
-            let byte_idx = idx * 2;
-            u16::from_be_bytes([self.bytes[byte_idx], self.bytes[byte_idx + 1]])
-        }
+
+        #[cfg(target_endian = "little")]
+        let idx = 1 - idx;
+
+        unsafe { self.words[idx] }
     }
 
-    pub fn copy_bytes(self) -> [u8; 4] {
-        unsafe { self.bytes }
-    }
-
-    pub fn copy_byte(self, idx: usize) -> u8 {
+    pub const fn copy_byte(self, idx: usize) -> u8 {
         if idx > 3 {
             return 0;
         }
+
+        #[cfg(target_endian = "little")]
+        let idx = 3 - idx;
+
         unsafe { self.bytes[idx] }
     }
 
-    pub fn shift_right(&mut self, d: u8) {
+    pub const fn shift_right(&mut self, d: u8) {
         unsafe {
-            let mut value = u32::from_be_bytes(self.bytes);
-            value >>= d;
-            self.bytes = value.to_be_bytes();
+            self.dword >>= d;
         }
     }
 
-    pub fn shift_left(&mut self, d: u8) {
+    pub const fn shift_left(&mut self, d: u8) {
         unsafe {
-            let mut value = u32::from_be_bytes(self.bytes);
-            value <<= d;
-            self.bytes = value.to_be_bytes();
+            self.dword <<= d;
         }
     }
 
     /// Reads the nth bit from the right counting from 0
-    pub fn read_bool(&self, d: u8) -> bool {
+    pub const fn read_bool(&self, d: u8) -> bool {
         if d >= 32 {
             return false;
         }
-        (self.copy_dword() & (1u32 << d)) != 0
+
+        #[cfg(target_endian = "little")]
+        return (unsafe { self.dword } & (1u32 << ((d % 8) + 8 * (3 - (d / 8))))) != 0;
+
+        #[cfg(target_endian = "big")]
+        return (unsafe { self.dword } & (1u32 << d)) != 0;
     }
 }
 
 impl From<[u8; 4]> for ByteHandler {
     fn from(value: [u8; 4]) -> Self {
-        ByteHandler { bytes: value }
+        ByteHandler {
+            #[cfg(target_endian = "big")]
+            bytes: [value[0], value[1], value[2], value[3]],
+            #[cfg(target_endian = "little")]
+            bytes: [value[3], value[2], value[1], value[0]],
+        }
     }
 }
 
 impl From<[u8; 3]> for ByteHandler {
     fn from(value: [u8; 3]) -> Self {
         ByteHandler {
-            bytes: [0, value[0], value[1], value[2]],
+            #[cfg(target_endian = "big")]
+            bytes: [value[0], value[1], value[2], 0],
+            #[cfg(target_endian = "little")]
+            bytes: [0, value[2], value[1], value[0]],
         }
     }
 }
@@ -83,7 +90,10 @@ impl From<[u8; 3]> for ByteHandler {
 impl From<[u8; 2]> for ByteHandler {
     fn from(value: [u8; 2]) -> Self {
         ByteHandler {
-            bytes: [0, 0, value[0], value[1]],
+            #[cfg(target_endian = "big")]
+            bytes: [value[0], value[1], 0, 0],
+            #[cfg(target_endian = "little")]
+            bytes: [0, 0, value[1], value[0]],
         }
     }
 }
@@ -91,6 +101,9 @@ impl From<[u8; 2]> for ByteHandler {
 impl From<u8> for ByteHandler {
     fn from(value: u8) -> Self {
         ByteHandler {
+            #[cfg(target_endian = "big")]
+            bytes: [value, 0, 0, 0],
+            #[cfg(target_endian = "little")]
             bytes: [0, 0, 0, value],
         }
     }
@@ -98,59 +111,73 @@ impl From<u8> for ByteHandler {
 
 impl From<u32> for ByteHandler {
     fn from(value: u32) -> Self {
-        ByteHandler {
-            bytes: value.to_be_bytes(),
-        }
+        ByteHandler { dword: value }
     }
 }
 
 impl From<[u16; 2]> for ByteHandler {
     fn from(value: [u16; 2]) -> Self {
-        let bytes: [u8; 4] = [
-            value[0].to_be_bytes()[0],
-            value[0].to_be_bytes()[1],
-            value[1].to_be_bytes()[0],
-            value[1].to_be_bytes()[1],
-        ];
-        ByteHandler { bytes }
+        ByteHandler {
+            #[cfg(target_endian = "big")]
+            words: [value[0], value[1]],
+            #[cfg(target_endian = "little")]
+            words: [value[1], value[0]],
+        }
     }
 }
 
 impl From<u16> for ByteHandler {
     fn from(value: u16) -> Self {
-        ByteHandler::from([0_u16, value])
+        ByteHandler {
+            #[cfg(target_endian = "big")]
+            words: [value, 0],
+            #[cfg(target_endian = "little")]
+            words: [0, value],
+        }
     }
 }
 
+macro_rules! shorten_syntax {
+    ($num:literal $value:ident $type:ty) => {
+        Ok(From::from(unsafe {
+            TryInto::<[$type; $num]>::try_into($value).unwrap_unchecked()
+        }))
+    };
+}
+
 impl TryFrom<&[u8]> for ByteHandler {
-    type Error = ();
+    type Error = ByteHandlerError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         match value.len() {
-            0 => Ok(ByteHandler::from(0u32)),
-            1 => Ok(ByteHandler::from(value[0])),
-            2 => Ok(ByteHandler::from([value[0], value[1]])),
-            3 => Ok(ByteHandler::from([value[0], value[1], value[2]])),
-            4 => Ok(ByteHandler::from([value[0], value[1], value[2], value[3]])),
-            _ => Err(()),
+            0 => Ok(From::from(0u32)),
+            1 => Ok(From::from(value[0])),
+            2 => shorten_syntax!(2 value u8),
+            3 => shorten_syntax!(3 value u8),
+            4 => shorten_syntax!(4 value u8),
+            _ => Err(ByteHandlerError::ConversionErrorTooLong),
         }
     }
 }
 
 impl TryFrom<&[u16]> for ByteHandler {
-    type Error = ();
+    type Error = ByteHandlerError;
 
     fn try_from(value: &[u16]) -> Result<Self, Self::Error> {
         match value.len() {
-            0 => Ok(ByteHandler::from(0u32)),
-            1 => Ok(ByteHandler::from(value[0])),
-            2 => Ok(ByteHandler::from([value[0], value[1]])),
-            _ => Err(()),
+            0 => Ok(From::from(0u32)),
+            1 => Ok(From::from(value[0])),
+            2 => shorten_syntax!(2 value u16),
+            _ => Err(ByteHandlerError::ConversionErrorTooLong),
         }
     }
 }
 
 pub(crate) trait FromByteHandler: Sized {
     type Err;
-    fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err>;
+
+    fn from_byte_handler<T>(handler: T) -> Result<Self, Self::Err>
+    where
+        T: TryInto<ByteHandler>,
+        Self::Err: From<T::Error>;
 }

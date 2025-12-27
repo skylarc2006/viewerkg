@@ -1,4 +1,4 @@
-use crate::byte_handler::{ByteHandler, FromByteHandler};
+use crate::byte_handler::{ByteHandler, ByteHandlerError, FromByteHandler};
 
 /// Struct that handles the validity of the Character/Vehicle combo used in the RKG file
 pub struct Combo {
@@ -18,6 +18,8 @@ pub enum ComboError {
     InvalidCharacterId,
     #[error("Impossible Character ID")]
     ImpossibleCharacterId,
+    #[error("ByteHandler Error: {0}")]
+    ByteHandlerError(#[from] ByteHandlerError),
 }
 
 impl Combo {
@@ -41,17 +43,21 @@ impl Combo {
 
 impl FromByteHandler for Combo {
     type Err = ComboError;
-    /// Expects Header 0x08..0x0A
-    fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
-        let mut handler = handler
-            .try_into()
-            .map_err(|_| ())
-            .expect("TODO: Handle this!");
+    /// Expects Header 0x08..0x0A, 2 Bytes, where V = vehicle and C = character
+    /// 1. VVVVVVCC
+    /// 2. CCCCXXXX
+    fn from_byte_handler<T>(handler: T) -> Result<Self, Self::Err>
+    where
+        T: TryInto<ByteHandler>,
+        Self::Err: From<T::Error>,
+    {
+        let mut handler = handler.try_into()?;
 
-        handler.shift_right(2);
-        let vehicle = handler.copy_byte(2);
-        handler.shift_right(2);
-        let character = handler.copy_byte(3) & 0x3F;
+        handler.shift_right(2); // 1. 00VVVVVV
+        let vehicle = handler.copy_byte(0);
+
+        handler.shift_right(2); // 2. VVCCCCCC
+        let character = handler.copy_byte(1) & 0x3F;
 
         Self::new(
             Vehicle::try_from(vehicle).map_err(|_| ComboError::InvalidVehicleId)?,

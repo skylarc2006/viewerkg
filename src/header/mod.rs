@@ -1,5 +1,5 @@
 use crate::{
-    byte_handler::{ByteHandler, FromByteHandler},
+    byte_handler::{ByteHandler, ByteHandlerError, FromByteHandler},
     header::{
         combo::{Combo, ComboError},
         controller::{Controller, ControllerError},
@@ -47,6 +47,8 @@ pub enum HeaderError {
     IoError(#[from] std::io::Error),
     #[error("Country Error: {0}")]
     CountryError(#[from] CountryError),
+    #[error("ByteHandler Error: {0}")]
+    ByteHandlerError(#[from] ByteHandlerError),
 }
 
 /// All the data in the Header of an RKGD
@@ -96,20 +98,19 @@ impl Header {
         let is_compressed = ByteHandler::from(header_data[0x0C]).read_bool(3);
         let ghost_type = GhostType::from_byte_handler(&header_data[0x0C..=0x0D])?;
         let is_automatic_drift = ByteHandler::from(header_data[0x0D]).read_bool(1);
-        let decompressed_input_data_length = ByteHandler::try_from(&header_data[0x0E..=0x0F])
-            .unwrap()
-            .copy_word(1);
+        let decompressed_input_data_length =
+            ByteHandler::try_from(&header_data[0x0E..=0x0F])?.copy_word(0);
 
         let lap_count = header_data[0x10];
         let mut lap_split_times: [InGameTime; 10] = [Default::default(); 10];
-        for index in 0..lap_count {
+        for index in 0..10 {
             let start = (0x11 + index * 3) as usize;
             lap_split_times[index as usize] =
                 InGameTime::from_byte_handler(&header_data[start..start + 3])?;
         }
 
         let codes = ByteHandler::try_from(&header_data[0x34..=0x37]).unwrap();
-        let country = Country::try_from(codes.copy_byte(0))?;
+        let country = Country::NotSet; // Country::try_from(codes.copy_byte(0))?;
         let subregion = codes.copy_byte(1);
         let location_code = codes.copy_word(1);
 
@@ -119,9 +120,7 @@ impl Header {
         }
         let mii = Mii::new(mii_bytes)?;
 
-        let mii_crc16 = ByteHandler::try_from(&header_data[0x86..=0x87])
-            .unwrap()
-            .copy_word(1);
+        let mii_crc16 = ByteHandler::try_from(&header_data[0x86..=0x87])?.copy_word(0);
 
         Ok(Self {
             finish_time,

@@ -1,13 +1,7 @@
 use crate::{
     ctgp_metadata::CTGPMetadata,
     header::{
-        Header,
-        combo::{Character, Vehicle},
-        controller::Controller,
-        date::Date,
-        ghost_type::GhostType,
-        location::country::Country,
-        slot_id::SlotId,
+        Header, combo::{Character, Vehicle}, controller::Controller, date::Date, ghost_type::GhostType, location::country::Country, mii::{eyebrows::EyebrowType, eyes::{EyeColor, EyeType}, facial_hair::{BeardType, MustacheType}, fav_color::FavColor, glasses::{GlassesColor, GlassesType}, hair::{HairColor, HairType}, head::{FaceFeatures, HeadShape, SkinTone}, lips::{LipsColor, LipsType}, nose::NoseType}, slot_id::SlotId
     },
     input_data::InputData,
 };
@@ -42,65 +36,65 @@ fn test_rkg_header() {
 
     // Mii Data
     assert!(!header.mii().is_girl());
-    assert_eq!(header.mii().month(), Some(1));
-    assert_eq!(header.mii().day(), Some(1));
-    assert_eq!(header.mii().favorite_color(), 4);
+    assert_eq!(header.mii().birthday().month(), Some(1));
+    assert_eq!(header.mii().birthday().day(), Some(1));
+    assert_eq!(header.mii().favorite_color(), FavColor::ForestGreen);
     assert_eq!(header.mii().name(), "JC");
-    assert_eq!(header.mii().height(), 127);
-    assert_eq!(header.mii().weight(), 127);
+    assert_eq!(header.mii().build().height(), 127);
+    assert_eq!(header.mii().build().weight(), 127);
 
     assert_eq!(header.mii().mii_id(), 0x893EF2FB);
     assert_eq!(header.mii().system_id(), 0x689EC992);
 
-    assert_eq!(header.mii().face_shape(), 3);
-    assert_eq!(header.mii().skin_color(), 1);
-    assert_eq!(header.mii().facial_feature(), 0);
+    assert_eq!(header.mii().head().shape(), HeadShape::Large);
+    assert_eq!(header.mii().head().skin_tone(), SkinTone::Natural);
+    assert_eq!(header.mii().head().face_features(), FaceFeatures::None);
 
     assert!(header.mii().mingle_off());
     assert!(!header.mii().downloaded());
 
-    assert_eq!(header.mii().hair_type(), 33);
-    assert_eq!(header.mii().hair_color(), 2);
-    assert!(!header.mii().hair_part_reversed());
+    assert_eq!(header.mii().hair().hair_type(), HairType::NormalLong);
+    assert_eq!(header.mii().hair().hair_color(), HairColor::PhilippineBrown);
+    assert!(!header.mii().hair().is_flipped());
 
-    assert_eq!(header.mii().eyebrow_type(), 23);
-    assert_eq!(header.mii().eyebrow_rotation(), 5);
-    assert_eq!(header.mii().eyebrow_color(), 1);
-    assert_eq!(header.mii().eyebrow_size(), 4);
-    assert_eq!(header.mii().eyebrow_vertical_pos(), 10);
-    assert_eq!(header.mii().eyebrow_horizontal_spacing(), 2);
+    assert_eq!(header.mii().eyebrows().eyebrow_type(), EyebrowType::None);
+    assert_eq!(header.mii().eyebrows().rotation(), 5);
+    assert_eq!(header.mii().eyebrows().eyebrow_color(), HairColor::Chocolate);
+    assert_eq!(header.mii().eyebrows().size(), 4);
+    assert_eq!(header.mii().eyebrows().y(), 10);
+    assert_eq!(header.mii().eyebrows().x(), 2);
 
-    assert_eq!(header.mii().eye_type(), 5);
-    assert_eq!(header.mii().eye_rotation(), 4);
-    assert_eq!(header.mii().eye_vertical_pos(), 9);
-    assert_eq!(header.mii().eye_color(), 0);
-    assert_eq!(header.mii().eye_size(), 6);
-    assert_eq!(header.mii().eye_horizontal_spacing(), 1);
+    assert_eq!(header.mii().eyes().eye_type(), EyeType::DotAngry);
+    assert_eq!(header.mii().eyes().rotation(), 4);
+    assert_eq!(header.mii().eyes().y(), 9);
+    assert_eq!(header.mii().eyes().eye_color(), EyeColor::Black);
+    assert_eq!(header.mii().eyes().size(), 6);
+    assert_eq!(header.mii().eyes().x(), 1);
 
-    assert_eq!(header.mii().nose_type(), 2);
-    assert_eq!(header.mii().nose_size(), 0);
-    assert_eq!(header.mii().nose_vertical_pos(), 8);
+    assert_eq!(header.mii().nose().nose_type(), NoseType::Dot);
+    assert_eq!(header.mii().nose().size(), 0);
+    assert_eq!(header.mii().nose().y(), 8);
 
-    assert_eq!(header.mii().lip_type(), 12);
-    assert_eq!(header.mii().lip_color(), 0);
-    assert_eq!(header.mii().lip_size(), 7);
-    assert_eq!(header.mii().lip_vertical_pos(), 6);
+    assert_eq!(header.mii().lips().lips_type(), LipsType::WaveAngry);
+    assert_eq!(header.mii().lips().lips_color(), LipsColor::Orange);
+    assert_eq!(header.mii().lips().size(), 7);
+    assert_eq!(header.mii().lips().y(), 6);
 
-    assert_eq!(header.mii().glasses_type(), 0);
-    assert_eq!(header.mii().glasses_color(), 0);
-    assert_eq!(header.mii().glasses_size(), 4);
-    assert_eq!(header.mii().glasses_vertical_pos(), 10);
+    assert_eq!(header.mii().glasses().glasses_type(), GlassesType::None);
+    assert_eq!(header.mii().glasses().glasses_color(), GlassesColor::Black);
+    assert_eq!(header.mii().glasses().size(), 4);
+    assert_eq!(header.mii().glasses().y(), 10);
 
-    assert_eq!(header.mii().mustache_type(), 0);
-    assert_eq!(header.mii().beard_type(), 0);
-    assert_eq!(header.mii().facial_hair_color(), 0);
-    assert_eq!(header.mii().mustache_size(), 4);
-    assert_eq!(header.mii().mustache_vertical_pos(), 10);
+    assert_eq!(header.mii().facial_hair().mustache_type(), MustacheType::None);
+    assert_eq!(header.mii().facial_hair().beard_type(), BeardType::None);
+    assert_eq!(header.mii().facial_hair().color(), HairColor::Black);
+    assert_eq!(header.mii().facial_hair().mustache_size(), 4);
+    assert_eq!(header.mii().facial_hair().mustache_y(), 10);
 
-    assert!(!header.mii().has_mole());
-    assert_eq!(header.mii().mole_size(), 4);
-    assert_eq!(header.mii().mole_vertical_pos(), 20);
-    assert_eq!(header.mii().mole_horizontal_pos(), 2);
+    assert!(!header.mii().mole().has_mole());
+    assert_eq!(header.mii().mole().size(), 4);
+    assert_eq!(header.mii().mole().y(), 20);
+    assert_eq!(header.mii().mole().x(), 2);
 
     assert_eq!(header.mii().creator_name(), "JC");
 

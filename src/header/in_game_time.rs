@@ -1,11 +1,13 @@
 use std::fmt::Display;
 
-use crate::byte_handler::{ByteHandler, FromByteHandler};
+use crate::byte_handler::{ByteHandler, ByteHandlerError, FromByteHandler};
 
 #[derive(thiserror::Error, Debug)]
 pub enum InGameTimeError {
     #[error("Insufficiently Long Iterator")]
     InsufficientlyLongIterator,
+    #[error("ByteHandler Error: {0}")]
+    ByteHandlerError(#[from] ByteHandlerError),
 }
 
 // Struct size is 32 bits, copy is fine
@@ -59,29 +61,27 @@ impl Display for InGameTime {
 
 impl FromByteHandler for InGameTime {
     type Err = InGameTimeError;
-    fn from_byte_handler<T: TryInto<ByteHandler>>(handler: T) -> Result<Self, Self::Err> {
-        // TODO: Handle 3 digit second values (which are actually valid and read by the game)
 
-        let handler = handler
-            .try_into()
-            .map_err(|_| ())
-            .expect("TODO: handle this");
-        // 3 Bytes, where M = Minutes, S = Seconds and C = Millis.
-        // 1. 0bMMMMMMMS
-        // 2. 0bSSSSSSCC
-        // 3. 0bCCCCCCCC
+    /// 3 Bytes, where M = Minutes, S = Seconds and C = Millis.
+    /// 1. 0bMMMMMMMS
+    /// 2. 0bSSSSSSCC
+    /// 3. 0bCCCCCCCC
+    fn from_byte_handler<T>(handler: T) -> Result<Self, Self::Err>
+    where
+        T: TryInto<ByteHandler>,
+        Self::Err: From<T::Error>,
+    {
+        let mut handler = handler.try_into()?;
 
-        // max M = 5    // 0b0000101
-        // max S = 59   // 0b0111011
-        // max C = 999  // 0b1111100111
-        // 1. 0b00001010
-        // 2. 0b11101111
-        // 3. 0b11100111
+        handler.shift_right(1);
+        let minutes = handler.copy_byte(0);
+        let seconds = handler.copy_byte(1) >> 1;
+        handler.shift_left(9);
 
         Ok(Self {
-            minutes: handler.copy_byte(1) >> 1,
-            seconds: handler.copy_byte(2) >> 2 & 0x7F,
-            milliseconds: handler.copy_word(1) & 0x3FF,
+            minutes,
+            seconds,
+            milliseconds: handler.copy_word(0) & 0x3FF,
         })
     }
 }
