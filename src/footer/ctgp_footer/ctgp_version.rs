@@ -300,6 +300,10 @@ impl CTGPVersion {
                 possible_versions.push(CTGPVersion::new(1, 3, 1192, Some(3)));
             }
 
+            &[0x01, 0x03, 0x04, 0x12] => {
+                possible_versions.push(CTGPVersion::new(1, 3, 1192, Some(5)));
+            }
+
             _ => {
                 return None;
             }

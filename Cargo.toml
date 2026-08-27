@@ -1,7 +1,7 @@
 [package]
 name = "rkg-utils"
 license = "GPL-3.0-or-later"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2024"
 authors = ["Skylar Childers <skylarchilders2006@gmail.com>", "Leila Massanova <leilamassanova@gmail.com>"]
 description = "A crate allowing the parsing and modification of Mario Kart Wii ghost files."
